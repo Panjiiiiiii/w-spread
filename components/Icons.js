@@ -35,3 +35,9 @@ export const CheckCircleIcon = ({ color = '#27AE60', size = 20 }) => (
     <Path d="M22 4L12 14.01l-3-3" />
   </Svg>
 );
+
+export const SparkleIcon = ({ color = '#1F6F5F', size = 22 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <Path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+  </Svg>
+);

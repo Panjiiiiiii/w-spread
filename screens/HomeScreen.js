@@ -29,15 +29,16 @@ export default function HomeScreen({
   cashAmount = '15.000',
   onQuickSimulation,
   onUploadEStatement,
+  onSimulateRunway,
 }) {
   const [internalTab, setInternalTab] = useState('home');
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalTab;
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentRunway, setCurrentRunway] = useState(runwayDays);
 
-  const handleTabPress = (tabKey) => {
+  const handleTabPress = (tabKey, params) => {
     if (onTabPress) {
-      onTabPress(tabKey);
+      onTabPress(tabKey, params);
     } else {
       setInternalTab(tabKey);
     }
@@ -52,9 +53,14 @@ export default function HomeScreen({
   };
 
   const handleSimulationDone = (scenarioData) => {
-    console.log('Simulated scenario data:', scenarioData);
+    setIsModalVisible(false);
     if (scenarioData?.simulatedDays) {
       setCurrentRunway(scenarioData.simulatedDays);
+    }
+    if (onSimulateRunway) {
+      onSimulateRunway(scenarioData);
+    } else if (onTabPress) {
+      onTabPress('prediction', scenarioData);
     }
   };
 

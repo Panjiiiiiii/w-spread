@@ -4,4 +4,5 @@ export { default as HeroRunwayCard } from './HeroRunwayCard';
 export { default as CashCard } from './CashCard';
 export { default as SimulateDecisionModal } from './SimulateDecisionModal';
 export { default as CutExpenseSlider } from './CutExpenseSlider';
-export { DocumentFillIcon, DocumentOutlineIcon, ArrowLeftIcon, CheckCircleIcon } from './Icons';
+export { default as CircularProgress } from './CircularProgress';
+export { DocumentFillIcon, DocumentOutlineIcon, ArrowLeftIcon, CheckCircleIcon, SparkleIcon } from './Icons';
