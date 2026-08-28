@@ -1,20 +1,47 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  HomeScreen,
+  PredictionScreen,
+  EStatementScreen,
+  ProfileScreen,
+} from './screens';
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+  const [activeTab, setActiveTab] = useState('home');
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+  const renderCurrentScreen = () => {
+    switch (activeTab) {
+      case 'prediction':
+        return (
+          <PredictionScreen
+            activeTab={activeTab}
+            onTabPress={setActiveTab}
+          />
+        );
+      case 'estatement':
+        return (
+          <EStatementScreen
+            activeTab={activeTab}
+            onTabPress={setActiveTab}
+          />
+        );
+      case 'profile':
+        return (
+          <ProfileScreen
+            activeTab={activeTab}
+            onTabPress={setActiveTab}
+          />
+        );
+      case 'home':
+      default:
+        return (
+          <HomeScreen
+            activeTab={activeTab}
+            onTabPress={setActiveTab}
+          />
+        );
+    }
+  };
+
+  return renderCurrentScreen();
+}
