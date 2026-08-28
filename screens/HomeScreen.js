@@ -15,6 +15,7 @@ import {
   HeroRunwayCard,
   CashCard,
   Button,
+  SimulateDecisionModal,
   DocumentFillIcon,
 } from '../components';
 
@@ -31,12 +32,29 @@ export default function HomeScreen({
 }) {
   const [internalTab, setInternalTab] = useState('home');
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalTab;
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [currentRunway, setCurrentRunway] = useState(runwayDays);
 
   const handleTabPress = (tabKey) => {
     if (onTabPress) {
       onTabPress(tabKey);
     } else {
       setInternalTab(tabKey);
+    }
+  };
+
+  const handleQuickSimulation = () => {
+    if (onQuickSimulation) {
+      onQuickSimulation();
+    } else {
+      setIsModalVisible(true);
+    }
+  };
+
+  const handleSimulationDone = (scenarioData) => {
+    console.log('Simulated scenario data:', scenarioData);
+    if (scenarioData?.simulatedDays) {
+      setCurrentRunway(scenarioData.simulatedDays);
     }
   };
 
@@ -82,10 +100,11 @@ export default function HomeScreen({
           {/* Hero Runway Card */}
           <View style={styles.sectionItem}>
             <HeroRunwayCard
-              days={runwayDays}
+              days={currentRunway}
               title="Days Of Runway"
               statusText="Safe zone (> 90 Days)"
               statusType="safe"
+              onPress={handleQuickSimulation}
             />
           </View>
 
@@ -106,7 +125,7 @@ export default function HomeScreen({
               title="Quick Simulation"
               variant="primary"
               fullWidth
-              onPress={onQuickSimulation || (() => console.log('Quick Simulation pressed'))}
+              onPress={handleQuickSimulation}
             />
 
             {/* Secondary Button: Upload E-Statement */}
@@ -120,6 +139,17 @@ export default function HomeScreen({
             />
           </View>
         </ScrollView>
+
+        {/* Simulate Decision Modal Organism */}
+        <SimulateDecisionModal
+          visible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          baseDays={runwayDays}
+          initialCutExpense={80}
+          initialInjectCapital="20.000.000"
+          initialFreezeHiring={true}
+          onSimulate={handleSimulationDone}
+        />
 
         {/* Floating Fixed Bottom-Middle Navbar */}
         <Navbar
