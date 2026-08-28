@@ -11,3 +11,27 @@ export const DocumentFillIcon = ({ color = '#1F6F5F', size = 24 }) => (
     />
   </Svg>
 );
+
+export const DocumentOutlineIcon = ({ color = '#1F6F5F', size = 36 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <Path d="M14 2v6h6" />
+    <Path d="M16 13H8" />
+    <Path d="M16 17H8" />
+    <Path d="M10 9H8" />
+  </Svg>
+);
+
+export const ArrowLeftIcon = ({ color = '#FFFFFF', size = 18 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M19 12H5" />
+    <Path d="M12 19l-7-7 7-7" />
+  </Svg>
+);
+
+export const CheckCircleIcon = ({ color = '#27AE60', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <Path d="M22 4L12 14.01l-3-3" />
+  </Svg>
+);

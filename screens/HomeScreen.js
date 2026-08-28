@@ -135,7 +135,7 @@ export default function HomeScreen({
               fullWidth
               leftIcon={<DocumentFillIcon size={24} color="#1F6F5F" />}
               style={styles.uploadButton}
-              onPress={onUploadEStatement || (() => console.log('Upload E-Statement pressed'))}
+              onPress={onUploadEStatement || (() => handleTabPress('estatement'))}
             />
           </View>
         </ScrollView>
