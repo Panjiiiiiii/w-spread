@@ -5,4 +5,19 @@ export { default as CashCard } from './CashCard';
 export { default as SimulateDecisionModal } from './SimulateDecisionModal';
 export { default as CutExpenseSlider } from './CutExpenseSlider';
 export { default as CircularProgress } from './CircularProgress';
-export { DocumentFillIcon, DocumentOutlineIcon, ArrowLeftIcon, CheckCircleIcon, SparkleIcon } from './Icons';
+export {
+  DocumentFillIcon,
+  DocumentOutlineIcon,
+  ArrowLeftIcon,
+  CheckCircleIcon,
+  SparkleIcon,
+  CrownIcon,
+  DiamondIcon,
+  ChevronRightIcon,
+  CheckMarkSmallIcon,
+  CreditCardIcon,
+  ShieldCheckIcon,
+  TagIcon,
+  WalletIcon,
+  QrCodeIcon,
+} from './Icons';

@@ -4,10 +4,20 @@ import {
   PredictionScreen,
   EStatementScreen,
   ProfileScreen,
+  MembershipScreen,
 } from './screens';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
+
+  // User Profile & Membership State
+  const [membershipInfo, setMembershipInfo] = useState({
+    role: 'The Owner',
+    validDays: 19,
+    totalDays: 365,
+    expiryDate: '27 Aug 2027',
+  });
+
   const [predictionParams, setPredictionParams] = useState({
     step: 'simulation',
     cutExpense: 20,
@@ -38,6 +48,15 @@ export default function App() {
     setActiveTab(tabKey);
   };
 
+  const handleMembershipUpgraded = (upgradeData) => {
+    setMembershipInfo((prev) => ({
+      ...prev,
+      role: upgradeData.role || 'The Business Owner',
+      validDays: 365,
+      expiryDate: '31 Aug 2028',
+    }));
+  };
+
   const renderCurrentScreen = () => {
     switch (activeTab) {
       case 'prediction':
@@ -59,11 +78,25 @@ export default function App() {
             onTabPress={handleTabPress}
           />
         );
+      case 'membership':
+        return (
+          <MembershipScreen
+            activeTab="profile"
+            onTabPress={handleTabPress}
+            onBack={() => setActiveTab('profile')}
+            onMembershipUpgraded={handleMembershipUpgraded}
+          />
+        );
       case 'profile':
         return (
           <ProfileScreen
             activeTab={activeTab}
             onTabPress={handleTabPress}
+            role={membershipInfo.role}
+            validDays={membershipInfo.validDays}
+            totalDays={membershipInfo.totalDays}
+            expiryDate={membershipInfo.expiryDate}
+            onExtendMembership={() => setActiveTab('membership')}
           />
         );
       case 'home':
