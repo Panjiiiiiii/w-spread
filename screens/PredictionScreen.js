@@ -60,8 +60,10 @@ export default function PredictionScreen({
     // Dynamic formula for realistic calculation
     const expenseBonus = Math.round((cutExpense / 100) * 40);
     const hiringBonus = freezeHiring ? 12 : 0;
-    const cleanNum = parseFloat(injectCapital.replace(/[^0-9]/g, '')) || 0;
-    const capitalBonus = cleanNum > 0 ? Math.min(Math.round(cleanNum / 1000), 20) : 0;
+    const cleanNum = parseFloat(String(injectCapital).replace(/[^0-9]/g, '')) || 0;
+    const capitalBonus = cleanNum > 100000
+      ? Math.min(Math.round(cleanNum / 1000000), 20)
+      : (cleanNum > 0 ? Math.min(Math.round(cleanNum / 1000), 20) : 0);
 
     const totalCalculated = baseDays + expenseBonus + hiringBonus + capitalBonus;
     const diff = totalCalculated - baseDays;
@@ -77,6 +79,15 @@ export default function PredictionScreen({
       onBack();
     } else if (onTabPress) {
       onTabPress('home');
+    }
+  };
+
+  const handleTabPress = (tabKey, tabItem) => {
+    if (tabKey === 'prediction') {
+      setCurrentStep('simulation');
+    }
+    if (onTabPress) {
+      onTabPress(tabKey, tabItem);
     }
   };
 
@@ -189,7 +200,7 @@ export default function PredictionScreen({
                 <HeroRunwayCard
                   days={simulatedDays}
                   title="Days Of Runway"
-                  statusText={`Safe zone (+${diffDays > 0 ? diffDays + 15 : 35} Days)`}
+                  statusText={`Safe zone (+${diffDays > 0 ? diffDays : 0} Days)`}
                   statusType="safe"
                 />
               </View>
@@ -274,7 +285,7 @@ export default function PredictionScreen({
         {/* Floating Bottom-Middle Navbar */}
         <Navbar
           activeTab={activeTab}
-          onTabPress={onTabPress}
+          onTabPress={handleTabPress}
         />
       </View>
     </SafeAreaView>

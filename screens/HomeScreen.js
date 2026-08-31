@@ -57,10 +57,17 @@ export default function HomeScreen({
     if (scenarioData?.simulatedDays) {
       setCurrentRunway(scenarioData.simulatedDays);
     }
+    const params = {
+      step: 'results',
+      cutExpense: scenarioData?.cutExpense !== undefined ? scenarioData.cutExpense : 80,
+      injectCapital: scenarioData?.injectCapital !== undefined ? scenarioData.injectCapital : '20.000.000',
+      freezeHiring: scenarioData?.freezeHiring !== undefined ? scenarioData.freezeHiring : true,
+      simulatedDays: scenarioData?.simulatedDays,
+    };
     if (onSimulateRunway) {
-      onSimulateRunway(scenarioData);
+      onSimulateRunway(params);
     } else if (onTabPress) {
-      onTabPress('prediction', scenarioData);
+      onTabPress('prediction', params);
     }
   };
 
