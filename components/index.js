@@ -5,6 +5,7 @@ export { default as CashCard } from './CashCard';
 export { default as SimulateDecisionModal } from './SimulateDecisionModal';
 export { default as CutExpenseSlider } from './CutExpenseSlider';
 export { default as CircularProgress } from './CircularProgress';
+export { default as AppLogo } from './AppLogo';
 export {
   DocumentFillIcon,
   DocumentOutlineIcon,
@@ -20,4 +21,11 @@ export {
   TagIcon,
   WalletIcon,
   QrCodeIcon,
+  GoogleIcon,
+  MailIcon,
+  LockIcon,
+  UserIcon,
+  EyeIcon,
+  EyeOffIcon,
+  LogOutIcon,
 } from './Icons';

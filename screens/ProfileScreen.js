@@ -16,6 +16,7 @@ import {
   CrownIcon,
   DiamondIcon,
   ChevronRightIcon,
+  LogOutIcon,
 } from '../components';
 
 export default function ProfileScreen({
@@ -28,6 +29,7 @@ export default function ProfileScreen({
   totalDays = 365,
   expiryDate = '27 Aug 2027',
   onExtendMembership,
+  onLogOut,
 }) {
   const progressPercentage = Math.min(
     100,
@@ -40,6 +42,23 @@ export default function ProfileScreen({
     } else if (onTabPress) {
       onTabPress('membership');
     }
+  };
+
+  const handleLogOutPress = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out of your W-Spread account?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: () => {
+            if (onLogOut) onLogOut();
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -137,6 +156,18 @@ export default function ProfileScreen({
 
             {/* Right Part: Right Chevron */}
             <ChevronRightIcon size={18} color="#1F6F5F" />
+          </TouchableOpacity>
+
+          {/* Log Out Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleLogOutPress}
+            style={styles.logoutButton}
+          >
+            <View style={styles.logoutButtonContent}>
+              <LogOutIcon size={18} color="#EB5757" />
+              <Text style={styles.logoutButtonText}>Log Out</Text>
+            </View>
           </TouchableOpacity>
         </ScrollView>
 
@@ -375,6 +406,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#1F6F5F',
     fontWeight: '500',
+    fontFamily: Platform.select({
+      ios: 'System',
+      android: 'Roboto',
+      default: 'Poppins, sans-serif',
+    }),
+  },
+  logoutButton: {
+    width: '100%',
+    maxWidth: 353,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFD6D6',
+    backgroundColor: '#FFF5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+  },
+  logoutButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoutButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#EB5757',
     fontFamily: Platform.select({
       ios: 'System',
       android: 'Roboto',

@@ -1,12 +1,12 @@
 import React from 'react';
-import Svg, { Path, Rect, Circle } from 'react-native-svg';
+import Svg, { Path, Rect, Circle, G } from 'react-native-svg';
 
 export const DocumentFillIcon = ({ color = '#1F6F5F', size = 24 }) => (
   <Svg width={size} height={size} viewBox="0 0 28 28" fill="none">
     <Path
       fillRule="evenodd"
       clipRule="evenodd"
-      d="M4.66667 4.66667C4.66667 3.378 5.71134 2.33333 7 2.33333H16.5335C17.1523 2.33333 17.7458 2.57917 18.1834 3.01675L22.6499 7.48325C23.0875 7.92084 23.3333 8.51433 23.3333 9.13317V23.3333C23.3333 24.622 22.2887 25.6667 21 25.6667H7C5.71134 25.6667 4.66667 24.622 4.66667 23.3333V4.66667ZM9.33333 9.33333C8.689 9.33333 8.16667 9.85567 8.16667 10.5C8.16667 11.1443 8.689 11.6667 9.33333 11.6667H11.6667C12.311 11.6667 12.8333 11.1443 12.8333 10.5C12.8333 9.85567 12.311 9.33333 11.6667 9.33333H9.33333ZM8.16667 15.1667C8.16667 14.5223 8.689 14 9.33333 14H14C14.6443 14 15.1667 14.5223 15.1667 15.1667C15.1667 15.811 14.6443 16.3333 14 16.3333H9.33333C8.689 16.3333 8.16667 15.811 8.16667 15.1667ZM8.16667 19.8333C8.16667 19.189 8.689 18.6667 9.33333 18.6667H16.3333C16.9777 18.6667 17.5 19.189 17.5 19.8333C17.5 20.4777 16.9777 21 16.3333 21H9.33333C8.689 21 8.16667 20.4777 8.16667 19.8333Z"
+      d="M4.66667 4.66667C4.66667 3.378 5.71134 2.33333 7 2.33333H16.5335C17.1523 2.33333 17.7458 2.57917 18.1834 3.01675L22.6499 7.48325C23.0875 7.92084 23.3333 8.51433 23.3333 9.13317V23.3333C23.3333 24.622 22.2887 25.6667 21 25.6667H7C5.71134 25.6667 4.66667 24.622 4.66667 23.3333V4.66667ZM9.33333 9.33333C8.689 9.33333 8.16667 10.85567 8.16667 10.5C8.16667 11.1443 8.689 11.6667 9.33333 11.6667H11.6667C12.311 11.6667 12.8333 11.1443 12.8333 10.5C12.8333 9.85567 12.311 9.33333 11.6667 9.33333H9.33333ZM8.16667 15.1667C8.16667 14.5223 8.689 14 9.33333 14H14C14.6443 14 15.1667 14.5223 15.1667 15.1667C15.1667 15.811 14.6443 16.3333 14 16.3333H9.33333C8.689 16.3333 8.16667 15.811 8.16667 15.1667ZM8.16667 19.8333C8.16667 19.189 8.689 18.6667 9.33333 18.6667H16.3333C16.9777 18.6667 17.5 19.189 17.5 19.8333C17.5 20.4777 16.9777 21 16.3333 21H9.33333C8.689 21 8.16667 20.4777 8.16667 19.8333Z"
       fill={color}
     />
   </Svg>
@@ -107,5 +107,69 @@ export const QrCodeIcon = ({ color = '#1F6F5F', size = 22 }) => (
     <Path d="M17 17h4v4h-4z" />
     <Path d="M14 20h3v1h-3z" />
     <Path d="M20 14h1v3h-1z" />
+  </Svg>
+);
+
+export const GoogleIcon = ({ size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Path
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      fill="#4285F4"
+    />
+    <Path
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      fill="#34A853"
+    />
+    <Path
+      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+      fill="#FBBC05"
+    />
+    <Path
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+      fill="#EA4335"
+    />
+  </Svg>
+);
+
+export const MailIcon = ({ color = '#1F6F5F', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+    <Path d="M22 6l-10 7L2 6" />
+  </Svg>
+);
+
+export const LockIcon = ({ color = '#1F6F5F', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <Path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </Svg>
+);
+
+export const UserIcon = ({ color = '#1F6F5F', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <Circle cx="12" cy="7" r="4" />
+  </Svg>
+);
+
+export const EyeIcon = ({ color = '#828282', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <Circle cx="12" cy="12" r="3" />
+  </Svg>
+);
+
+export const EyeOffIcon = ({ color = '#828282', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+    <Path d="M1 1l22 22" />
+  </Svg>
+);
+
+export const LogOutIcon = ({ color = '#EB5757', size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <Path d="M16 17l5-5-5-5" />
+    <Path d="M21 12H9" />
   </Svg>
 );

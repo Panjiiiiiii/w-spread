@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  AuthScreen,
   HomeScreen,
   PredictionScreen,
   EStatementScreen,
@@ -8,7 +9,15 @@ import {
 } from './screens';
 
 export default function App() {
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState({
+    name: 'Adam Ghosling',
+    email: 'adam@example.com',
+  });
+
   const [activeTab, setActiveTab] = useState('home');
+  const [isOnboarding, setIsOnboarding] = useState(false);
 
   // User Profile & Membership State
   const [membershipInfo, setMembershipInfo] = useState({
@@ -25,10 +34,36 @@ export default function App() {
     freezeHiring: true,
   });
 
+  // Login handler -> direct to Home / Dashboard
+  const handleLoginSuccess = (userData) => {
+    if (userData?.name) {
+      setUser((prev) => ({ ...prev, ...userData }));
+    }
+    setIsAuthenticated(true);
+    setIsOnboarding(false);
+    setActiveTab('home');
+  };
+
+  // Register handler -> redirect to Membership page (with skip option)
+  const handleRegisterSuccess = (userData) => {
+    if (userData?.name) {
+      setUser((prev) => ({ ...prev, ...userData }));
+    }
+    setIsAuthenticated(true);
+    setIsOnboarding(true);
+    setActiveTab('membership');
+  };
+
+  // Log Out handler -> back to AuthScreen
+  const handleLogOut = () => {
+    setIsAuthenticated(false);
+    setIsOnboarding(false);
+    setActiveTab('home');
+  };
+
   const handleTabPress = (tabKey, params) => {
     if (tabKey === 'prediction') {
       if (params && params.step) {
-        // Explicit step passed (e.g. step='results' from modal simulation)
         setPredictionParams({
           step: params.step,
           cutExpense: params.cutExpense !== undefined ? params.cutExpense : 80,
@@ -36,7 +71,6 @@ export default function App() {
           freezeHiring: params.freezeHiring !== undefined ? params.freezeHiring : true,
         });
       } else {
-        // Normal navbar tab click: ALWAYS open the first input page ('simulation')
         setPredictionParams({
           step: 'simulation',
           cutExpense: 20,
@@ -55,7 +89,18 @@ export default function App() {
       validDays: 365,
       expiryDate: '31 Aug 2028',
     }));
+    setIsOnboarding(false);
   };
+
+  // If not authenticated, render AuthScreen
+  if (!isAuthenticated) {
+    return (
+      <AuthScreen
+        onLoginSuccess={handleLoginSuccess}
+        onRegisterSuccess={handleRegisterSuccess}
+      />
+    );
+  }
 
   const renderCurrentScreen = () => {
     switch (activeTab) {
@@ -83,7 +128,15 @@ export default function App() {
           <MembershipScreen
             activeTab="profile"
             onTabPress={handleTabPress}
-            onBack={() => setActiveTab('profile')}
+            onBack={() => {
+              setIsOnboarding(false);
+              setActiveTab('profile');
+            }}
+            isOnboarding={isOnboarding}
+            onSkipToDashboard={() => {
+              setIsOnboarding(false);
+              setActiveTab('home');
+            }}
             onMembershipUpgraded={handleMembershipUpgraded}
           />
         );
@@ -92,11 +145,16 @@ export default function App() {
           <ProfileScreen
             activeTab={activeTab}
             onTabPress={handleTabPress}
+            userName={user.name}
             role={membershipInfo.role}
             validDays={membershipInfo.validDays}
             totalDays={membershipInfo.totalDays}
             expiryDate={membershipInfo.expiryDate}
-            onExtendMembership={() => setActiveTab('membership')}
+            onExtendMembership={() => {
+              setIsOnboarding(false);
+              setActiveTab('membership');
+            }}
+            onLogOut={handleLogOut}
           />
         );
       case 'home':
@@ -105,6 +163,7 @@ export default function App() {
           <HomeScreen
             activeTab={activeTab}
             onTabPress={handleTabPress}
+            userName={user.name}
             onSimulateRunway={(params) => handleTabPress('prediction', params)}
           />
         );

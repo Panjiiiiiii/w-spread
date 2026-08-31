@@ -114,6 +114,8 @@ export default function MembershipScreen({
   onTabPress,
   onBack,
   onMembershipUpgraded,
+  isOnboarding = false,
+  onSkipToDashboard,
 }) {
   // Navigation step: 'plans' or 'checkout'
   const [currentStep, setCurrentStep] = useState('plans');
@@ -135,7 +137,14 @@ export default function MembershipScreen({
 
   // Handle plan select
   const handleSelectPlan = (plan) => {
-    if (plan.disabled) return;
+    if (plan.disabled) {
+      if (isOnboarding && onSkipToDashboard) {
+        onSkipToDashboard();
+      } else if (onTabPress) {
+        onTabPress('home');
+      }
+      return;
+    }
     setSelectedPlan(plan);
     setAppliedDiscount(null);
     setPromoCodeInput('');
@@ -194,9 +203,19 @@ export default function MembershipScreen({
     }, 1400);
   };
 
+  const handleSkip = () => {
+    if (onSkipToDashboard) {
+      onSkipToDashboard();
+    } else if (onTabPress) {
+      onTabPress('home');
+    }
+  };
+
   const handleBackNavigation = () => {
     if (currentStep === 'checkout') {
       setCurrentStep('plans');
+    } else if (isOnboarding) {
+      handleSkip();
     } else if (onBack) {
       onBack();
     } else if (onTabPress) {
@@ -232,7 +251,19 @@ export default function MembershipScreen({
             <Text style={styles.headerTitle}>
               {currentStep === 'checkout' ? 'RevenueCat Checkout' : 'Membership Plans'}
             </Text>
-            <View style={styles.headerPlaceholder} />
+
+            {isOnboarding && currentStep === 'plans' ? (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleSkip}
+                style={styles.skipHeaderBtn}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.skipHeaderBtnText}>Skip</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.headerPlaceholder} />
+            )}
           </View>
 
           {/* ================= STEP 1: PLANS SELECTION ================= */}
@@ -694,6 +725,17 @@ const styles = StyleSheet.create({
   },
   headerPlaceholder: {
     width: 34,
+  },
+  skipHeaderBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#E8F8F0',
+  },
+  skipHeaderBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F6F5F',
   },
   headlineContainer: {
     width: '100%',
