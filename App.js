@@ -6,7 +6,61 @@ import {
   EStatementScreen,
   ProfileScreen,
   MembershipScreen,
+  LogHistoryScreen,
 } from './screens';
+
+const INITIAL_LOGS = [
+  {
+    id: 'log-1',
+    type: 'prediction',
+    title: 'Runway Extended: 162 Days (+20 days)',
+    description: 'Scenario test: Cut expenses by 20%, injected $10.000 capital, and paused hiring.',
+    timestamp: 'Today, 14:32',
+    params: {
+      cutExpense: 20,
+      injectCapital: '10.000',
+      freezeHiring: true,
+      simulatedDays: 162,
+      diffDays: 20,
+    },
+  },
+  {
+    id: 'log-2',
+    type: 'estatement',
+    title: 'Expense Breakdown Analyzed (BCA_JanFeb2026.pdf)',
+    description: 'Categorized $120.000 total burn rate across Operations, Marketing, and Software.',
+    timestamp: 'Yesterday, 10:15',
+    params: {
+      fileName: 'BCA_Statement_JanFeb2026.pdf',
+      totalAmount: '$ 120.000',
+    },
+  },
+  {
+    id: 'log-3',
+    type: 'prediction',
+    title: 'Runway Extended: 194 Days (+52 days)',
+    description: 'Aggressive burn reduction: Cut expenses by 80% with $20.000.000 capital infusion.',
+    timestamp: '02 Sep 2026, 16:40',
+    params: {
+      cutExpense: 80,
+      injectCapital: '20.000.000',
+      freezeHiring: true,
+      simulatedDays: 194,
+      diffDays: 52,
+    },
+  },
+  {
+    id: 'log-4',
+    type: 'estatement',
+    title: 'Expense Breakdown Analyzed (Mandiri_Corporate_Q3.pdf)',
+    description: 'Analyzed corporate burn: Identified 50% allocation to payroll and operations.',
+    timestamp: '28 Aug 2026, 11:20',
+    params: {
+      fileName: 'Mandiri_Corporate_Q3.pdf',
+      totalAmount: '$ 85.000',
+    },
+  },
+];
 
 export default function App() {
   // Authentication State
@@ -27,12 +81,35 @@ export default function App() {
     expiryDate: '27 Aug 2027',
   });
 
+  // Prediction Parameters
   const [predictionParams, setPredictionParams] = useState({
     step: 'simulation',
     cutExpense: 20,
     injectCapital: '10.000',
     freezeHiring: true,
   });
+
+  // E-Statement Parameters
+  const [estatementParams, setEstatementParams] = useState({
+    step: 'upload',
+    fileName: 'BCA_Statement_JanFeb2026.pdf',
+  });
+
+  // Activity Logs State
+  const [activityLogs, setActivityLogs] = useState(INITIAL_LOGS);
+
+  const handleAddLog = (newLog) => {
+    const logItem = {
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      ...newLog,
+    };
+    setActivityLogs((prev) => [logItem, ...prev]);
+  };
+
+  const handleClearLogs = () => {
+    setActivityLogs([]);
+  };
 
   // Login handler -> direct to Home / Dashboard
   const handleLoginSuccess = (userData) => {
@@ -78,6 +155,18 @@ export default function App() {
           freezeHiring: true,
         });
       }
+    } else if (tabKey === 'estatement') {
+      if (params && params.step) {
+        setEstatementParams({
+          step: params.step,
+          fileName: params.fileName || 'BCA_Statement_JanFeb2026.pdf',
+        });
+      } else {
+        setEstatementParams({
+          step: 'upload',
+          fileName: 'BCA_Statement_JanFeb2026.pdf',
+        });
+      }
     }
     setActiveTab(tabKey);
   };
@@ -114,13 +203,18 @@ export default function App() {
             initialCutExpense={predictionParams.cutExpense}
             initialInjectCapital={predictionParams.injectCapital}
             initialFreezeHiring={predictionParams.freezeHiring}
+            onLogCreated={handleAddLog}
           />
         );
       case 'estatement':
         return (
           <EStatementScreen
+            key={`estatement-${estatementParams.step}-${estatementParams.fileName}`}
             activeTab={activeTab}
             onTabPress={handleTabPress}
+            initialStep={estatementParams.step}
+            initialFileName={estatementParams.fileName}
+            onLogCreated={handleAddLog}
           />
         );
       case 'membership':
@@ -140,6 +234,32 @@ export default function App() {
             onMembershipUpgraded={handleMembershipUpgraded}
           />
         );
+      case 'logs':
+        return (
+          <LogHistoryScreen
+            activeTab="profile"
+            onTabPress={handleTabPress}
+            onBack={() => setActiveTab('profile')}
+            logs={activityLogs}
+            onSelectLog={(log) => {
+              if (log.type === 'prediction') {
+                handleTabPress('prediction', {
+                  step: 'results',
+                  cutExpense: log.params?.cutExpense ?? 20,
+                  injectCapital: log.params?.injectCapital ?? '10.000',
+                  freezeHiring: log.params?.freezeHiring ?? true,
+                  simulatedDays: log.params?.simulatedDays ?? 162,
+                });
+              } else if (log.type === 'estatement') {
+                handleTabPress('estatement', {
+                  step: 'results',
+                  fileName: log.params?.fileName || 'BCA_Statement_JanFeb2026.pdf',
+                });
+              }
+            }}
+            onClearLogs={handleClearLogs}
+          />
+        );
       case 'profile':
         return (
           <ProfileScreen
@@ -154,6 +274,7 @@ export default function App() {
               setIsOnboarding(false);
               setActiveTab('membership');
             }}
+            onViewLogs={() => setActiveTab('logs')}
             onLogOut={handleLogOut}
           />
         );
@@ -172,3 +293,4 @@ export default function App() {
 
   return renderCurrentScreen();
 }
+

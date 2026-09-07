@@ -17,6 +17,7 @@ import {
   DiamondIcon,
   ChevronRightIcon,
   LogOutIcon,
+  HistoryIcon,
 } from '../components';
 
 export default function ProfileScreen({
@@ -29,6 +30,7 @@ export default function ProfileScreen({
   totalDays = 365,
   expiryDate = '27 Aug 2027',
   onExtendMembership,
+  onViewLogs,
   onLogOut,
 }) {
   const progressPercentage = Math.min(
@@ -41,6 +43,14 @@ export default function ProfileScreen({
       onExtendMembership();
     } else if (onTabPress) {
       onTabPress('membership');
+    }
+  };
+
+  const handleLogsPress = () => {
+    if (onViewLogs) {
+      onViewLogs();
+    } else if (onTabPress) {
+      onTabPress('logs');
     }
   };
 
@@ -158,6 +168,22 @@ export default function ProfileScreen({
             <ChevronRightIcon size={18} color="#1F6F5F" />
           </TouchableOpacity>
 
+          {/* Activity & History Logs Button */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleLogsPress}
+            style={styles.logMenuButton}
+          >
+            {/* Left Part: History Icon + Label */}
+            <View style={styles.extendButtonLeft}>
+              <HistoryIcon size={18} color="#1F6F5F" />
+              <Text style={styles.extendButtonText}>Activity & History Logs</Text>
+            </View>
+
+            {/* Right Part: Right Chevron */}
+            <ChevronRightIcon size={18} color="#1F6F5F" />
+          </TouchableOpacity>
+
           {/* Log Out Button */}
           <TouchableOpacity
             activeOpacity={0.8}
@@ -170,6 +196,7 @@ export default function ProfileScreen({
             </View>
           </TouchableOpacity>
         </ScrollView>
+
 
         {/* Floating Bottom-Middle Navbar */}
         <Navbar
@@ -412,7 +439,36 @@ const styles = StyleSheet.create({
       default: 'Poppins, sans-serif',
     }),
   },
+  logMenuButton: {
+    width: '100%',
+    maxWidth: 353,
+    height: 48,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E0E0E0',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.04)',
+      },
+    }),
+  },
   logoutButton: {
+
     width: '100%',
     maxWidth: 353,
     height: 44,

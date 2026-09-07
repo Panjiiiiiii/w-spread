@@ -28,4 +28,11 @@ export {
   EyeIcon,
   EyeOffIcon,
   LogOutIcon,
+  HistoryIcon,
+  TrendingUpIcon,
+  BarChartIcon,
+  CalendarIcon,
+  TrashIcon,
+  SlidersIcon,
 } from './Icons';
+

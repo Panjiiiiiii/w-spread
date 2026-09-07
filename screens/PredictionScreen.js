@@ -29,6 +29,7 @@ export default function PredictionScreen({
   initialCutExpense = 20,
   initialInjectCapital = '10.000',
   initialFreezeHiring = true,
+  onLogCreated,
 }) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [cutExpense, setCutExpense] = useState(initialCutExpense);
@@ -93,7 +94,22 @@ export default function PredictionScreen({
 
   const handleSimulateRunway = () => {
     setCurrentStep('results');
+    if (onLogCreated) {
+      onLogCreated({
+        type: 'prediction',
+        title: `Simulated Runway: ${simulatedDays} Days (+${diffDays} days)`,
+        description: `Cut expense by ${cutExpense}%, injected $${injectCapital}, hiring ${freezeHiring ? 'frozen' : 'active'}.`,
+        params: {
+          cutExpense,
+          injectCapital,
+          freezeHiring,
+          simulatedDays,
+          diffDays,
+        },
+      });
+    }
   };
+
 
   return (
     <SafeAreaView style={styles.safeArea}>

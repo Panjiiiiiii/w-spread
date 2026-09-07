@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -45,11 +45,18 @@ export default function EStatementScreen({
   activeTab = 'estatement',
   onTabPress,
   onBack,
+  initialStep = 'upload',
+  initialFileName,
+  onLogCreated,
 }) {
   // 'upload' or 'results' step
-  const [currentStep, setCurrentStep] = useState('upload');
+  const [currentStep, setCurrentStep] = useState(initialStep);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    if (initialStep) setCurrentStep(initialStep);
+  }, [initialStep]);
 
   const handlePickDocument = async () => {
     try {
@@ -73,8 +80,22 @@ export default function EStatementScreen({
     setTimeout(() => {
       setIsProcessing(false);
       setCurrentStep('results');
+
+      if (onLogCreated) {
+        const fileLabel = selectedFile?.name || initialFileName || 'BCA_Statement_JanFeb2026.pdf';
+        onLogCreated({
+          type: 'estatement',
+          title: `Expense Breakdown Analyzed (${fileLabel})`,
+          description: 'Calculated burn rate breakdown: Payroll (50%), Marketing (30%), Utilities (20%).',
+          params: {
+            fileName: fileLabel,
+            totalAmount: '$ 120.000',
+          },
+        });
+      }
     }, 1000);
   };
+
 
   const formatFileSize = (bytes) => {
     if (!bytes) return '';
