@@ -1,0 +1,32 @@
+flows:
+  - source_loc: App.js:67
+    from_unit: auth
+    to_unit: home
+    state: isAuthenticated/user
+    pairing: matched
+    must_preserve: "Successful login/register establishes the user context before dashboard/profile rendering."
+  - source_loc: App.js:77
+    from_unit: membership
+    to_unit: profile
+    state: membershipInfo
+    pairing: matched
+    must_preserve: "Upgrade changes role, validity, and expiry shown in profile."
+  - source_loc: App.js:85
+    from_unit: home
+    to_unit: prediction
+    state: predictionParams
+    pairing: matched
+    must_preserve: "Quick simulation opens prediction with the selected scenario values."
+  - source_loc: App.js:93
+    from_unit: logs
+    to_unit: statement
+    state: estatementParams
+    pairing: matched
+    must_preserve: "Selecting a statement log reopens its result context."
+  - source_loc: App.js:99
+    from_unit: prediction
+    to_unit: logs
+    state: activityLogs
+    pairing: matched
+    must_preserve: "Completed simulations append a replayable activity record."
+

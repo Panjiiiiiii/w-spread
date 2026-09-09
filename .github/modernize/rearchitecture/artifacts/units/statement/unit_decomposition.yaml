@@ -1,0 +1,7 @@
+unit: statement
+commit: false
+candidate_splits:
+  - drivers: [external_integration, async_processing, data_ownership]
+    candidate: "Upload API / parser worker or provider adapter / statement result query"
+    rationale: "Parsing is the only candidate that may later need independent scaling, but not before real workload evidence."
+

@@ -1,0 +1,44 @@
+units:
+  - name: auth
+    source_anchors: [screens/AuthScreen.js:26]
+    exported_signature: "AuthScreen({onLoginSuccess, onRegisterSuccess})"
+    depends_on: [app]
+    dynamic_entrypoints: []
+    shared_refs: [app]
+  - name: home
+    source_anchors: [screens/HomeScreen.js:22]
+    exported_signature: "HomeScreen({activeTab, onTabPress, userName, onSimulateRunway})"
+    depends_on: [app, prediction]
+    dynamic_entrypoints: []
+    shared_refs: [app, navbar]
+  - name: prediction
+    source_anchors: [screens/PredictionScreen.js:23]
+    exported_signature: "PredictionScreen({initialStep, initialCutExpense, initialInjectCapital, initialFreezeHiring, onLogCreated})"
+    depends_on: [app, logs]
+    dynamic_entrypoints: []
+    shared_refs: [app, navbar]
+  - name: statement
+    source_anchors: [screens/EStatementScreen.js:44]
+    exported_signature: "EStatementScreen({initialStep, initialFileName, onLogCreated})"
+    depends_on: [app, logs]
+    dynamic_entrypoints: []
+    shared_refs: [app, navbar]
+  - name: membership
+    source_anchors: [screens/MembershipScreen.js:112]
+    exported_signature: "MembershipScreen({isOnboarding, onMembershipUpgraded, onSkipToDashboard})"
+    depends_on: [app]
+    dynamic_entrypoints: []
+    shared_refs: [app, navbar]
+  - name: profile
+    source_anchors: [screens/ProfileScreen.js:25]
+    exported_signature: "ProfileScreen({userName, role, validDays, totalDays, expiryDate, onLogOut})"
+    depends_on: [app, logs, membership]
+    dynamic_entrypoints: []
+    shared_refs: [app, navbar]
+  - name: logs
+    source_anchors: [screens/LogHistoryScreen.js:23]
+    exported_signature: "LogHistoryScreen({logs, onSelectLog, onClearLogs})"
+    depends_on: [app, prediction, statement]
+    dynamic_entrypoints: []
+    shared_refs: [app, navbar]
+

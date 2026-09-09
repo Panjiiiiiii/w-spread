@@ -1,0 +1,22 @@
+contracts:
+  - source_loc: screens/AuthScreen.js:65
+    interface: client_auth_callback
+    stability: frozen
+    target_contract: "Auth service returns authenticated user/session or a typed error; App shell receives user identity without trusting client-supplied entitlement."
+    semantic_divergence: "Current implementation always succeeds after a timeout; real auth must expose invalid credentials, duplicate account, provider cancellation, and network failure."
+  - source_loc: screens/EStatementScreen.js:61
+    interface: statement_upload_processing
+    stability: frozen
+    target_contract: "Upload accepts supported document metadata and returns processing status, categorized totals, burn rate, and a user-visible error when parsing fails."
+    semantic_divergence: "Current implementation returns fixed categories and no server processing."
+  - source_loc: screens/PredictionScreen.js:60
+    interface: runway_simulation
+    stability: frozen
+    target_contract: "Given base snapshot and scenario inputs, return deterministic runway days and delta; persist a user-owned scenario/activity record."
+    semantic_divergence: "Current formula is client-side and uses presentation-formatted currency strings."
+  - source_loc: screens/MembershipScreen.js:191
+    interface: subscription_entitlement
+    stability: frozen
+    target_contract: "Payment provider/webhook is authoritative; client receives verified plan and expiry, never calculates entitlement from promo input."
+    semantic_divergence: "Current payment and promo validation are entirely client-side simulations."
+

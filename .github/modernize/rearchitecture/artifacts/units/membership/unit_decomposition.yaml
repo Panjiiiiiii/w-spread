@@ -1,0 +1,7 @@
+unit: membership
+commit: false
+candidate_splits:
+  - drivers: [security_boundary, external_integration, idempotency]
+    candidate: "Plan catalog / checkout adapter / entitlement projection"
+    rationale: "Subscription verification and entitlement calculation must leave the UI; provider adapter remains a replaceable module."
+

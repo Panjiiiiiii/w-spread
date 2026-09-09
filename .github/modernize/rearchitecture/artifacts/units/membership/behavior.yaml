@@ -1,0 +1,10 @@
+unit: membership
+source_loc: screens/MembershipScreen.js:112
+side_effects:
+  - {source_loc: screens/MembershipScreen.js:191, must_preserve: "Payment completion updates membership state and displays success."}
+branches:
+  - {source_loc: screens/MembershipScreen.js:168, must_preserve: "Promo code feedback distinguishes empty, valid, and invalid codes."}
+error_paths:
+  - {source_loc: screens/MembershipScreen.js:186, contract: "Invalid promo code remains visible to the user", must_preserve: true}
+concurrency: {model: "single payment attempt", tx_boundary: "entitlement update must be idempotent"}
+

@@ -1,0 +1,5 @@
+unit: logs
+bindings:
+  - {source_loc: screens/LogHistoryScreen.js:23, framework: "React list and callback binding", must_appear_in_target: "History can be queried and replayed with typed records."}
+runtime_config: []
+

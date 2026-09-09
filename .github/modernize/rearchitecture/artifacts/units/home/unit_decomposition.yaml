@@ -1,0 +1,7 @@
+unit: home
+commit: false
+candidate_splits:
+  - drivers: [domain_boundary]
+    candidate: "Dashboard query model / dashboard presentation"
+    rationale: "Runway and cash values should arrive from a query boundary rather than constants."
+

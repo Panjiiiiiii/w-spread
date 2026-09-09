@@ -1,0 +1,6 @@
+unit: auth
+bindings:
+  - {source_loc: screens/AuthScreen.js:26, framework: "React component callback binding", must_appear_in_target: "Auth UI remains decoupled from provider implementation."}
+runtime_config:
+  - {source_loc: README.md:81, key: "auth provider configuration", must_appear_in_target: "Provider keys/configuration are externalized and not hard-coded."}
+

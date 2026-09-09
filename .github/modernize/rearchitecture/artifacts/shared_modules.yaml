@@ -1,0 +1,21 @@
+shared_modules:
+  - source_loc: App.js:65
+    kind: orchestration_state
+    used_by_units: [auth, home, prediction, statement, membership, profile, logs]
+    fields:
+      - {name: isAuthenticated, type: boolean}
+      - {name: user, type: object}
+      - {name: activeTab, type: string}
+      - {name: membershipInfo, type: object}
+      - {name: predictionParams, type: object}
+      - {name: estatementParams, type: object}
+      - {name: activityLogs, type: array}
+    split_candidate: "Move to explicit session, membership, scenario, statement, and activity modules while retaining one app shell."
+    migration_strategy: "Do not duplicate this state across services; expose typed application APIs or BaaS queries."
+  - source_loc: components/Navbar.js:94
+    kind: navigation_component
+    used_by_units: [home, prediction, statement, membership, profile, logs]
+    fields: []
+    split_candidate: "Keep as a client shared component."
+    migration_strategy: "No backend extraction."
+

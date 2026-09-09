@@ -1,0 +1,5 @@
+unit: prediction
+bindings:
+  - {source_loc: screens/PredictionScreen.js:23, framework: "React controlled input and callback binding", must_appear_in_target: "Input values and result state remain observable."}
+runtime_config: []
+

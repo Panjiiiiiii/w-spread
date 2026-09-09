@@ -1,0 +1,11 @@
+unit: statement
+source_loc: screens/EStatementScreen.js:44
+side_effects:
+  - {source_loc: screens/EStatementScreen.js:61, must_preserve: "Allows PDF, spreadsheet, and CSV selection and displays selected file metadata."}
+  - {source_loc: screens/EStatementScreen.js:78, must_preserve: "Processing transitions to results and creates an activity log."}
+branches:
+  - {source_loc: screens/EStatementScreen.js:68, must_preserve: "Cancelled/empty picker result does not start processing."}
+error_paths:
+  - {source_loc: screens/EStatementScreen.js:72, contract: "Picker failure shows an error alert", must_preserve: true}
+concurrency: {model: "single processing operation", tx_boundary: "statement processing persistence should be atomic"}
+

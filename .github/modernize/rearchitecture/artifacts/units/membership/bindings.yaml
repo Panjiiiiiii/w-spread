@@ -1,0 +1,6 @@
+unit: membership
+bindings:
+  - {source_loc: screens/MembershipScreen.js:191, framework: "RevenueCat integration placeholder", must_appear_in_target: "Provider purchase result and webhook entitlement are authoritative."}
+runtime_config:
+  - {source_loc: README.md:84, key: "REVENUECAT_API_KEY_IOS/ANDROID", must_appear_in_target: "Keys are configured outside source and never used as entitlement proof."}
+

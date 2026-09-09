@@ -1,0 +1,7 @@
+unit: profile
+commit: false
+candidate_splits:
+  - drivers: [data_ownership]
+    candidate: "Profile query / profile presentation"
+    rationale: "Profile should query the session and membership projection rather than receive mutable entitlement fields from the root."
+

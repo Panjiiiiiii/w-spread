@@ -24,6 +24,7 @@ export default function ProfileScreen({
   activeTab = 'profile',
   onTabPress,
   userName = 'Adam Ghosling',
+  profileImageUri,
   role = 'The Owner',
   streakCount = 12,
   validDays = 19,
@@ -31,6 +32,7 @@ export default function ProfileScreen({
   expiryDate = '27 Aug 2027',
   onExtendMembership,
   onViewLogs,
+  onEditProfile,
   onLogOut,
 }) {
   const progressPercentage = Math.min(
@@ -90,13 +92,17 @@ export default function ProfileScreen({
             {/* Left: Avatar + Name & Badge Column */}
             <View style={styles.userProfileGroup}>
               {/* User Avatar */}
-              <View style={styles.avatarWrapper}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={onEditProfile}
+                style={styles.avatarWrapper}
+              >
                 <Image
-                  source={require('../assets/avatar.png')}
+                  source={profileImageUri ? { uri: profileImageUri } : require('../assets/avatar.png')}
                   style={styles.avatarImage}
                   defaultSource={require('../assets/icon.png')}
                 />
-              </View>
+              </TouchableOpacity>
 
               {/* Name & Membership Badge Column */}
               <View style={styles.userInfoColumn}>

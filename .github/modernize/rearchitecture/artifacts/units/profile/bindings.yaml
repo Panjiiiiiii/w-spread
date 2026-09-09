@@ -1,0 +1,5 @@
+unit: profile
+bindings:
+  - {source_loc: screens/ProfileScreen.js:25, framework: "React props from App shell", must_appear_in_target: "Profile reflects authenticated user and verified membership."}
+runtime_config: []
+

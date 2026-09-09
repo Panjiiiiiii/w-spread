@@ -1,0 +1,7 @@
+unit: auth
+commit: false
+candidate_splits:
+  - drivers: [security_boundary, external_integration]
+    candidate: "UI form / auth application service / identity provider adapter"
+    rationale: "Provider calls and session/token handling should not live in the screen."
+

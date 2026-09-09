@@ -1,0 +1,6 @@
+unit: logs
+commit: false
+candidate_splits:
+  - drivers: [data_ownership, auditability]
+    candidate: "Activity log write model / history query model / history presentation"
+    rationale: "Logs become durable user-owned audit/history data once simulations and statement parsing are real."

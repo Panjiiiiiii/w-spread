@@ -1,0 +1,5 @@
+unit: home
+bindings:
+  - {source_loc: screens/HomeScreen.js:22, framework: "React props and shared Navbar", must_appear_in_target: "Dashboard remains a presentation consumer of server-owned metrics."}
+runtime_config: []
+

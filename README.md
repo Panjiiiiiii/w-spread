@@ -72,7 +72,7 @@ npm install
 
 # Set up environment variables
 cp .env.example .env
-# fill in your RevenueCat, Firebase/Supabase, and OCR API keys
+# For a physical device, replace localhost with your computer's LAN IP.
 
 # Run the app
 npx expo start
@@ -81,6 +81,7 @@ npx expo start
 ### Environment Variables
 
 ```
+EXPO_PUBLIC_API_URL=http://localhost:5000/api/v1
 REVENUECAT_API_KEY_IOS=
 REVENUECAT_API_KEY_ANDROID=
 FIREBASE_CONFIG=

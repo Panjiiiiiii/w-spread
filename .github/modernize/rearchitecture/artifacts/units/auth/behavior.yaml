@@ -1,0 +1,11 @@
+unit: auth
+source_loc: screens/AuthScreen.js:26
+side_effects:
+  - {source_loc: screens/AuthScreen.js:65, must_preserve: "Shows loading state during submit and invokes exactly one success callback."}
+branches:
+  - {source_loc: screens/AuthScreen.js:50, must_preserve: "Register validates name, minimum password length, and confirmation; login does not require name."}
+error_paths:
+  - {source_loc: screens/AuthScreen.js:45, contract: "User-visible incomplete form alert", must_preserve: true}
+  - {source_loc: screens/AuthScreen.js:52, contract: "User-visible validation alerts", must_preserve: true}
+concurrency: {model: "single in-flight simulated submission", tx_boundary: null}
+

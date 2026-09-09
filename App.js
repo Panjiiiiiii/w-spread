@@ -7,7 +7,9 @@ import {
   ProfileScreen,
   MembershipScreen,
   LogHistoryScreen,
+  EditProfileScreen,
 } from './screens';
+import { clearSession } from './services/api';
 
 const INITIAL_LOGS = [
   {
@@ -71,6 +73,7 @@ export default function App() {
   });
 
   const [activeTab, setActiveTab] = useState('home');
+  const [profileImageUri, setProfileImageUri] = useState(null);
   const [isOnboarding, setIsOnboarding] = useState(false);
 
   // User Profile & Membership State
@@ -133,9 +136,15 @@ export default function App() {
 
   // Log Out handler -> back to AuthScreen
   const handleLogOut = () => {
+    clearSession();
     setIsAuthenticated(false);
     setIsOnboarding(false);
     setActiveTab('home');
+  };
+
+  const handleSaveProfileImage = (imageUri) => {
+    setProfileImageUri(imageUri);
+    setActiveTab('profile');
   };
 
   const handleTabPress = (tabKey, params) => {
@@ -266,6 +275,7 @@ export default function App() {
             activeTab={activeTab}
             onTabPress={handleTabPress}
             userName={user.name}
+            profileImageUri={profileImageUri}
             role={membershipInfo.role}
             validDays={membershipInfo.validDays}
             totalDays={membershipInfo.totalDays}
@@ -275,7 +285,16 @@ export default function App() {
               setActiveTab('membership');
             }}
             onViewLogs={() => setActiveTab('logs')}
+            onEditProfile={() => setActiveTab('edit-profile')}
             onLogOut={handleLogOut}
+          />
+        );
+      case 'edit-profile':
+        return (
+          <EditProfileScreen
+            imageUri={profileImageUri}
+            onBack={() => setActiveTab('profile')}
+            onSave={handleSaveProfileImage}
           />
         );
       case 'home':
@@ -293,4 +312,3 @@ export default function App() {
 
   return renderCurrentScreen();
 }
-

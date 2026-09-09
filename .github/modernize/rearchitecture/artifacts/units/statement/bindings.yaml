@@ -1,0 +1,6 @@
+unit: statement
+bindings:
+  - {source_loc: screens/EStatementScreen.js:13, framework: "Expo DocumentPicker", must_appear_in_target: "Mobile file picker remains client-side; upload is an API boundary."}
+runtime_config:
+  - {source_loc: README.md:57, key: "OCR_API_KEY", must_appear_in_target: "OCR credentials stay server-side."}
+

@@ -1,0 +1,7 @@
+unit: prediction
+commit: false
+candidate_splits:
+  - drivers: [domain_boundary, consistency]
+    candidate: "Scenario validation/calculation service / prediction screen"
+    rationale: "The formula is business logic and should be shared by API and client display without duplicated rules."
+

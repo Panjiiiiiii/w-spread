@@ -1,0 +1,9 @@
+unit: profile
+source_loc: screens/ProfileScreen.js:25
+side_effects:
+  - {source_loc: screens/ProfileScreen.js:57, must_preserve: "Logout returns to unauthenticated state."}
+branches:
+  - {source_loc: screens/ProfileScreen.js:42, must_preserve: "Membership and logs actions navigate to their respective flows."}
+error_paths: []
+concurrency: {model: "reactive session view", tx_boundary: null}
+

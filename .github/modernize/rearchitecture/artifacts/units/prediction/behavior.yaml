@@ -1,0 +1,9 @@
+unit: prediction
+source_loc: screens/PredictionScreen.js:23
+side_effects:
+  - {source_loc: screens/PredictionScreen.js:95, must_preserve: "Simulation switches to results and creates an activity log."}
+branches:
+  - {source_loc: screens/PredictionScreen.js:62, must_preserve: "Expense, hiring, and capital inputs each contribute to the calculated result."}
+error_paths: []
+concurrency: {model: "synchronous client calculation", tx_boundary: null}
+

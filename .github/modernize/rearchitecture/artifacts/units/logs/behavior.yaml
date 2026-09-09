@@ -1,0 +1,10 @@
+unit: logs
+source_loc: screens/LogHistoryScreen.js:23
+side_effects:
+  - {source_loc: screens/LogHistoryScreen.js:63, must_preserve: "Clear action requires confirmation before removing history."}
+  - {source_loc: screens/LogHistoryScreen.js:42, must_preserve: "Selecting a log reopens prediction or statement context."}
+branches:
+  - {source_loc: screens/LogHistoryScreen.js:33, must_preserve: "All, prediction, and statement filters produce the corresponding subset."}
+error_paths: []
+concurrency: {model: "local list mutation", tx_boundary: "clear operation should be scoped to the authenticated user"}
+

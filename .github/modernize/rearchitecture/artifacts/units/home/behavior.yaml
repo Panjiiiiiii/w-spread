@@ -1,0 +1,9 @@
+unit: home
+source_loc: screens/HomeScreen.js:22
+side_effects:
+  - {source_loc: screens/HomeScreen.js:55, must_preserve: "Quick simulation forwards scenario values to prediction."}
+branches:
+  - {source_loc: screens/HomeScreen.js:47, must_preserve: "Uses callback when controlled; otherwise opens local simulation modal."}
+error_paths: []
+concurrency: {model: "reactive local state", tx_boundary: null}
+

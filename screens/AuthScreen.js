@@ -22,6 +22,7 @@ import {
   EyeOffIcon,
   GoogleIcon,
 } from '../components';
+import { loginWithEmail, registerWithEmail } from '../services/api';
 
 export default function AuthScreen({
   onLoginSuccess,
@@ -39,7 +40,7 @@ export default function AuthScreen({
   const [isLoading, setIsLoading] = useState(false);
 
   // Form Validation & Submission
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail || !password) {
@@ -52,8 +53,8 @@ export default function AuthScreen({
         Alert.alert('Incomplete Form', 'Please enter your full name.');
         return;
       }
-      if (password.length < 6) {
-        Alert.alert('Weak Password', 'Password must be at least 6 characters.');
+      if (password.length < 8) {
+        Alert.alert('Weak Password', 'Password must be at least 8 characters.');
         return;
       }
       if (password !== confirmPassword) {
@@ -63,46 +64,28 @@ export default function AuthScreen({
     }
 
     setIsLoading(true);
-
-    setTimeout(() => {
+    try {
+      const userData = authMode === 'register'
+        ? await registerWithEmail(trimmedEmail, password, fullName.trim())
+        : await loginWithEmail(trimmedEmail, password);
       setIsLoading(false);
-      const userData = {
-        name: fullName.trim() || (trimmedEmail.split('@')[0] || 'User'),
-        email: trimmedEmail,
-      };
-
       if (authMode === 'register') {
-        if (onRegisterSuccess) {
-          onRegisterSuccess(userData);
-        }
+        onRegisterSuccess?.(userData);
       } else {
-        if (onLoginSuccess) {
-          onLoginSuccess(userData);
-        }
+        onLoginSuccess?.(userData);
       }
-    }, 1000);
+    } catch (error) {
+      setIsLoading(false);
+      Alert.alert('Authentication Failed', error.message);
+    }
   };
 
   // Google Sign-In Simulation
   const handleGoogleSignIn = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      const googleUser = {
-        name: authMode === 'register' ? 'Google User' : 'Adam Ghosling',
-        email: 'user@gmail.com',
-      };
-
-      if (authMode === 'register') {
-        if (onRegisterSuccess) {
-          onRegisterSuccess(googleUser);
-        }
-      } else {
-        if (onLoginSuccess) {
-          onLoginSuccess(googleUser);
-        }
-      }
-    }, 1200);
+    Alert.alert(
+      'Google Sign-In',
+      'Google Identity Services is not configured yet. Use email and password for now.'
+    );
   };
 
   return (

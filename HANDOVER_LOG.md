@@ -180,6 +180,67 @@ Berikut adalah daftar tugas terencana yang siap dieksekusi oleh Agent penerus:
 
 ---
 
+## 🔌 6. Integrasi Repository Backend
+
+Backend resmi berada di repository terpisah:
+
+* **Mobile**: `https://github.com/Panjiiiiiii/w-spread`
+* **Backend**: `https://github.com/Panjiiiiiii/w-spread-backend`
+* **Backend base URL lokal**: `http://localhost:5000/api/v1`
+* **Environment mobile**: `.env.example` menggunakan `EXPO_PUBLIC_API_URL`
+* **API client**: `services/api.js`
+
+### Authentication API yang sudah diintegrasikan
+
+| Flow | Endpoint | Implementasi mobile |
+|---|---|---|
+| Register email | `POST /auth/register` | `screens/AuthScreen.js` |
+| Login email | `POST /auth/login` | `screens/AuthScreen.js` |
+| Session token | `Authorization` response header | Disimpan menggunakan `expo-secure-store` |
+
+Request register:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "name": "John Doe"
+}
+```
+
+Request login:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+Backend mengembalikan response envelope `success`, `message`, `data`, dan `meta`. Error ditampilkan oleh mobile melalui alert berdasarkan field `message`.
+
+### Catatan network lokal
+
+`localhost` hanya menunjuk ke device yang menjalankan aplikasi. Untuk Android emulator gunakan `http://10.0.2.2:5000/api/v1`; untuk physical device gunakan alamat IP LAN komputer yang menjalankan backend. Nilai tersebut diubah melalui `.env`, bukan hard-code di screen.
+
+### Edit profile image
+
+* Screen baru: `screens/EditProfileScreen.js`
+* Dibuka dengan menekan avatar pada `screens/ProfileScreen.js`
+* Menggunakan `expo-image-picker` SDK 57, crop 1:1, dan styling brand W-Spread.
+* Saat ini perubahan disimpan di state mobile karena backend belum memiliki endpoint update avatar untuk existing user.
+* Endpoint berikut perlu ditambahkan di backend sebelum upload profile image dipersistenkan:
+
+```text
+PATCH /api/v1/users/me/avatar
+Content-Type: multipart/form-data
+Authorization: <session-token>
+```
+
+Jangan mengarang endpoint tersebut di mobile sebelum kontrak backend tersedia.
+
+---
+
 ## 💡 4. Catatan Teknis Rahasia & "Gotchas" (Tips untuk Agent Baru)
 
 Harap perhatikan temuan dan trik teknis berikut agar kamu tidak mengalami bug yang sama:
