@@ -83,6 +83,18 @@ export async function updateProfileImage(imageUri, imageMetadata = {}) {
   return payload?.data;
 }
 
+export async function getMyMembership() {
+  const { payload } = await request('/memberships/me');
+  return payload?.data;
+}
+
+export async function linkRevenueCatUser(appUserId) {
+  await request('/memberships/revenuecat-user', {
+    method: 'PATCH',
+    body: JSON.stringify({ appUserId }),
+  });
+}
+
 export async function clearSession() {
   await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY);
 }

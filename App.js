@@ -9,7 +9,16 @@ import {
   LogHistoryScreen,
   EditProfileScreen,
 } from './screens';
-import { clearSession, updateProfileImage } from './services/api';
+import {
+  clearSession,
+  getMyMembership,
+  linkRevenueCatUser,
+  updateProfileImage,
+} from './services/api';
+import {
+  configureRevenueCat,
+  getSubscriptionTier,
+} from './services/revenueCat';
 
 const INITIAL_LOGS = [
   {
@@ -75,6 +84,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [profileImageUri, setProfileImageUri] = useState(null);
   const [isOnboarding, setIsOnboarding] = useState(false);
+  const [subscriptionTier, setSubscriptionTier] = useState(null);
 
   // User Profile & Membership State
   const [membershipInfo, setMembershipInfo] = useState({
@@ -115,29 +125,67 @@ export default function App() {
   };
 
   // Login handler -> direct to Home / Dashboard
-  const handleLoginSuccess = (userData) => {
+  const handleLoginSuccess = async (userData) => {
     if (userData?.name) {
       setUser((prev) => ({ ...prev, ...userData }));
     }
+    try {
+      const customerInfo = await configureRevenueCat(userData?.id || userData?.email);
+      await linkRevenueCatUser(userData?.id || userData?.email);
+      setSubscriptionTier(getSubscriptionTier(customerInfo));
+    } catch (error) {
+      console.warn('RevenueCat initialization failed:', error.message);
+      setSubscriptionTier(null);
+    }
+    await refreshMembership();
     setIsAuthenticated(true);
     setIsOnboarding(false);
     setActiveTab('home');
   };
 
   // Register handler -> redirect to Membership page (with skip option)
-  const handleRegisterSuccess = (userData) => {
+  const handleRegisterSuccess = async (userData) => {
     if (userData?.name) {
       setUser((prev) => ({ ...prev, ...userData }));
     }
+    try {
+      const customerInfo = await configureRevenueCat(userData?.id || userData?.email);
+      await linkRevenueCatUser(userData?.id || userData?.email);
+      setSubscriptionTier(getSubscriptionTier(customerInfo));
+    } catch (error) {
+      console.warn('RevenueCat initialization failed:', error.message);
+      setSubscriptionTier(null);
+    }
+    await refreshMembership();
     setIsAuthenticated(true);
     setIsOnboarding(true);
     setActiveTab('membership');
+  };
+
+  const refreshMembership = async () => {
+    try {
+      const membership = await getMyMembership();
+      setSubscriptionTier(membership?.tier || null);
+      setMembershipInfo((prev) => ({
+        ...prev,
+        role: membership?.role || 'The Owner',
+        validDays: membership?.validDays || 0,
+        totalDays: membership?.totalDays || 0,
+        expiryDate: membership?.expiresAt
+          ? new Date(membership.expiresAt).toLocaleDateString()
+          : 'No active membership',
+      }));
+    } catch (error) {
+      console.warn('Membership refresh failed:', error.message);
+    }
   };
 
   // Log Out handler -> back to AuthScreen
   const handleLogOut = () => {
     clearSession();
     setIsAuthenticated(false);
+    setSubscriptionTier(null);
+    setMembershipInfo((prev) => ({ ...prev, role: 'The Owner', validDays: 0, totalDays: 0, expiryDate: 'No active membership' }));
     setIsOnboarding(false);
     setActiveTab('home');
   };
@@ -154,6 +202,11 @@ export default function App() {
 
   const handleTabPress = (tabKey, params) => {
     if (tabKey === 'prediction') {
+      if (!subscriptionTier) {
+        setIsOnboarding(false);
+        setActiveTab('membership');
+        return;
+      }
       if (params && params.step) {
         setPredictionParams({
           step: params.step,
@@ -186,9 +239,10 @@ export default function App() {
   };
 
   const handleMembershipUpgraded = (upgradeData) => {
+    const tier = upgradeData.tier || subscriptionTier;
     setMembershipInfo((prev) => ({
       ...prev,
-      role: upgradeData.role || 'The Business Owner',
+      role: tier === 'enterprise' ? 'The Enterprise' : tier === 'business' ? 'The Business Owner' : 'The Owner',
       validDays: 365,
       expiryDate: '31 Aug 2028',
     }));
@@ -246,6 +300,11 @@ export default function App() {
               setActiveTab('home');
             }}
             onMembershipUpgraded={handleMembershipUpgraded}
+            subscriptionTier={subscriptionTier}
+            onSubscriptionChanged={setSubscriptionTier}
+            onManageSubscription={async () => {
+                      await refreshMembership();
+            }}
           />
         );
       case 'logs':

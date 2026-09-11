@@ -19,34 +19,17 @@ import {
   CrownIcon,
   DiamondIcon,
   CheckMarkSmallIcon,
-  CreditCardIcon,
-  ShieldCheckIcon,
-  TagIcon,
-  WalletIcon,
-  QrCodeIcon,
   CheckCircleIcon,
+  TagIcon,
   SparkleIcon,
 } from '../components';
+import {
+  openSubscriptionManagement,
+  purchaseTier,
+  restoreRevenueCatPurchases,
+} from '../services/revenueCat';
 
 const MEMBERSHIP_PLANS = [
-  {
-    id: 'productive',
-    name: 'Productive',
-    badge: 'Free Tier',
-    targetICP: 'Karyawan & Freelancer (Segala lini gaji)',
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    description: 'Structured DSS: 1-Angka Live Runway Personal, Auto-Parser & Gamified Health Score.',
-    features: [
-      '20 tries for what-if prediction',
-      '1-Angka Live Runway Personal',
-      'Auto-Parser e-Statement',
-      'Gamified Financial Health Score & Daily Streak',
-    ],
-    buttonText: 'Current Plan',
-    isPopular: false,
-    disabled: true,
-  },
   {
     id: 'business',
     name: 'Business',
@@ -88,27 +71,6 @@ const MEMBERSHIP_PLANS = [
   },
 ];
 
-const PAYMENT_METHODS = [
-  {
-    id: 'card',
-    name: 'Credit / Debit Card',
-    subtitle: 'Visa, Mastercard, Amex (RevenueCat)',
-    icon: CreditCardIcon,
-  },
-  {
-    id: 'wallet',
-    name: 'Apple / Google Pay',
-    subtitle: 'Instant 1-tap checkout',
-    icon: WalletIcon,
-  },
-  {
-    id: 'qris',
-    name: 'QRIS / Virtual Account',
-    subtitle: 'BCA, Mandiri, BRI, GoPay, OVO',
-    icon: QrCodeIcon,
-  },
-];
-
 export default function MembershipScreen({
   activeTab = 'profile',
   onTabPress,
@@ -116,27 +78,22 @@ export default function MembershipScreen({
   onMembershipUpgraded,
   isOnboarding = false,
   onSkipToDashboard,
+  subscriptionTier,
+  onSubscriptionChanged,
+  onManageSubscription,
 }) {
-  // Navigation step: 'plans' or 'checkout'
-  const [currentStep, setCurrentStep] = useState('plans');
   const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
-  const [selectedPlan, setSelectedPlan] = useState(MEMBERSHIP_PLANS[1]); // default Business
+  const [selectedPlan, setSelectedPlan] = useState(MEMBERSHIP_PLANS[0]); // default Business
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
+  const [discountError, setDiscountError] = useState('');
 
   // Checkout State
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
-  const [promoCodeInput, setPromoCodeInput] = useState('');
-  const [appliedDiscount, setAppliedDiscount] = useState(null); // { code, percentage, amount }
-  const [discountError, setDiscountError] = useState('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Mock Card Inputs
-  const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4242');
-  const [cardExpiry, setCardExpiry] = useState('12/28');
-  const [cardCvc, setCardCvc] = useState('888');
-
   // Handle plan select
-  const handleSelectPlan = (plan) => {
+  const handleSelectPlan = async (plan) => {
     if (plan.disabled) {
       if (isOnboarding && onSkipToDashboard) {
         onSkipToDashboard();
@@ -146,61 +103,76 @@ export default function MembershipScreen({
       return;
     }
     setSelectedPlan(plan);
-    setAppliedDiscount(null);
-    setPromoCodeInput('');
-    setDiscountError('');
-    setCurrentStep('checkout');
+    setIsProcessingPayment(true);
+    try {
+      const result = await purchaseTier(plan.id, billingCycle);
+      if (result.tier !== plan.id) {
+        throw new Error('The purchase completed, but the expected RevenueCat entitlement is not active.');
+      }
+      onSubscriptionChanged?.(result.tier);
+      onMembershipUpgraded?.({
+        plan: plan.name,
+        tier: result.tier,
+        role: plan.id === 'enterprise' ? 'The Enterprise' : 'The Business Owner',
+      });
+      setShowSuccessModal(true);
+    } catch (error) {
+      Alert.alert('Purchase Failed', error.message || 'RevenueCat could not complete the purchase.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
-  // Calculate pricing
-  const basePrice = billingCycle === 'yearly' ? selectedPlan.yearlyPrice : selectedPlan.monthlyPrice;
-  let discountAmount = 0;
-  if (appliedDiscount) {
-    if (appliedDiscount.percentage) {
-      discountAmount = (basePrice * appliedDiscount.percentage) / 100;
-    } else if (appliedDiscount.amount) {
-      discountAmount = Math.min(basePrice, appliedDiscount.amount);
-    }
-  }
-  const finalPrice = Math.max(0, basePrice - discountAmount);
-
-  // Promo code validation
   const handleApplyPromoCode = () => {
-    const cleanCode = promoCodeInput.trim().toUpperCase();
+    const code = promoCodeInput.trim().toUpperCase();
     setDiscountError('');
+    setAppliedDiscount(null);
 
-    if (!cleanCode) {
-      setDiscountError('Please enter a promo code');
+    if (!code) {
+      setDiscountError('Please enter a promo code.');
       return;
     }
 
-    if (cleanCode === 'PROMO20' || cleanCode === 'WSPREAD20') {
-      setAppliedDiscount({ code: cleanCode, percentage: 20 });
-      Alert.alert('Promo Applied! 🎉', '20% discount has been applied to your order.');
-    } else if (cleanCode === 'HACKATHON50' || cleanCode === 'WSPREAD50') {
-      setAppliedDiscount({ code: cleanCode, percentage: 50 });
-      Alert.alert('Special Promo Applied! 🚀', '50% discount has been applied to your order.');
-    } else if (cleanCode === 'REVENUECAT') {
-      setAppliedDiscount({ code: cleanCode, amount: 5 });
-      Alert.alert('RevenueCat Promo Applied! 💎', '$5 flat discount has been applied.');
-    } else {
-      setDiscountError('Invalid or expired promo code');
+    const discounts = {
+      PROMO20: 20,
+      WSPREAD20: 20,
+      HACKATHON50: 50,
+      WSPREAD50: 50,
+      REVENUECAT: 5,
+    };
+    const discount = discounts[code];
+    if (!discount) {
+      setDiscountError('Invalid or expired promo code.');
+      return;
+    }
+
+    setAppliedDiscount({ code, amount: discount });
+    Alert.alert('Promo Applied', `${code} is valid for the competition demo.`);
+  };
+
+  const handleRestorePurchases = async () => {
+    try {
+      const result = await restoreRevenueCatPurchases();
+      onSubscriptionChanged?.(result.tier);
+      if (result.tier) {
+        onMembershipUpgraded?.({
+          plan: result.tier,
+          role: result.tier === 'enterprise' ? 'The Enterprise' : 'The Business Owner',
+        });
+      }
+      Alert.alert('Purchases Restored', result.tier ? `Your ${result.tier} access is active.` : 'No active subscription was found.');
+    } catch (error) {
+      Alert.alert('Restore Failed', error.message || 'Unable to restore purchases.');
     }
   };
 
-  // Payment process simulation
-  const handleExecutePayment = () => {
-    setIsProcessingPayment(true);
-    setTimeout(() => {
-      setIsProcessingPayment(false);
-      setShowSuccessModal(true);
-      if (onMembershipUpgraded) {
-        onMembershipUpgraded({
-          plan: selectedPlan.name,
-          role: selectedPlan.id === 'enterprise' ? 'The Enterprise' : 'The Business Owner',
-        });
-      }
-    }, 1400);
+  const handleManageSubscription = async () => {
+    try {
+      await openSubscriptionManagement();
+      await onManageSubscription?.();
+    } catch (error) {
+      Alert.alert('Subscription Management Failed', error.message || 'Unable to open subscription management.');
+    }
   };
 
   const handleSkip = () => {
@@ -212,9 +184,7 @@ export default function MembershipScreen({
   };
 
   const handleBackNavigation = () => {
-    if (currentStep === 'checkout') {
-      setCurrentStep('plans');
-    } else if (isOnboarding) {
+    if (isOnboarding) {
       handleSkip();
     } else if (onBack) {
       onBack();
@@ -249,10 +219,10 @@ export default function MembershipScreen({
             </TouchableOpacity>
 
             <Text style={styles.headerTitle}>
-              {currentStep === 'checkout' ? 'RevenueCat Checkout' : 'Membership Plans'}
+              Membership Plans
             </Text>
 
-            {isOnboarding && currentStep === 'plans' ? (
+            {isOnboarding ? (
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={handleSkip}
@@ -267,7 +237,7 @@ export default function MembershipScreen({
           </View>
 
           {/* ================= STEP 1: PLANS SELECTION ================= */}
-          {currentStep === 'plans' ? (
+          <>
             <>
               {/* Headline */}
               <View style={styles.headlineContainer}>
@@ -390,222 +360,59 @@ export default function MembershipScreen({
                   );
                 })}
               </View>
-            </>
-          ) : (
-            /* ================= STEP 2: REVENUECAT CHECKOUT ================= */
-            <>
-              {/* Order Summary Box */}
-              <View style={styles.checkoutSummaryCard}>
-                <View style={styles.summaryTopRow}>
-                  <View>
-                    <Text style={styles.summaryPlanLabel}>SELECTED PLAN</Text>
-                    <Text style={styles.summaryPlanName}>{selectedPlan.name} Tier</Text>
-                    <Text style={styles.summaryBillingText}>
-                      Billed {billingCycle === 'yearly' ? 'Yearly' : 'Monthly'} • Auto-renews
-                    </Text>
-                  </View>
-
-                  <View style={styles.summaryPriceBox}>
-                    <Text style={styles.summaryPriceValue}>${basePrice}</Text>
-                    <Text style={styles.summaryPriceCycle}>
-                      {billingCycle === 'yearly' ? '/yr' : '/mo'}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Change Plan Button */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setCurrentStep('plans')}
-                  style={styles.changePlanBtn}
-                >
-                  <Text style={styles.changePlanText}>Change Plan</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Payment Methods Section */}
-              <Text style={styles.checkoutSectionTitle}>Select Payment Method</Text>
-
-              <View style={styles.paymentMethodsList}>
-                {PAYMENT_METHODS.map((method) => {
-                  const isSelected = selectedPaymentMethod === method.id;
-                  const IconComp = method.icon;
-
-                  return (
-                    <TouchableOpacity
-                      key={method.id}
-                      activeOpacity={0.85}
-                      onPress={() => setSelectedPaymentMethod(method.id)}
-                      style={[
-                        styles.paymentMethodCard,
-                        isSelected && styles.paymentMethodCardSelected,
-                      ]}
-                    >
-                      <View style={styles.paymentMethodLeft}>
-                        <View
-                          style={[
-                            styles.paymentIconWrapper,
-                            isSelected && styles.paymentIconWrapperSelected,
-                          ]}
-                        >
-                          <IconComp size={20} color={isSelected ? '#1F6F5F' : '#828282'} />
-                        </View>
-                        <View>
-                          <Text style={styles.paymentMethodName}>{method.name}</Text>
-                          <Text style={styles.paymentMethodSubtitle}>{method.subtitle}</Text>
-                        </View>
-                      </View>
-
-                      {/* Radio Circle */}
-                      <View
-                        style={[
-                          styles.radioCircle,
-                          isSelected && styles.radioCircleSelected,
-                        ]}
-                      >
-                        {isSelected && <View style={styles.radioDot} />}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Card Details Form (shown when Credit Card is selected) */}
-              {selectedPaymentMethod === 'card' && (
-                <View style={styles.cardFormContainer}>
-                  <Text style={styles.cardFormLabel}>Card Number</Text>
-                  <View style={styles.cardInputWrapper}>
-                    <CreditCardIcon size={18} color="#1F6F5F" />
+              <View style={styles.promoSection}>
+                <Text style={styles.checkoutSectionTitle}>Competition Promo Code</Text>
+                <View style={styles.promoCodeContainer}>
+                  <View style={styles.promoInputWrapper}>
+                    <TagIcon size={16} color="#1F6F5F" />
                     <TextInput
-                      style={styles.cardTextInput}
-                      value={cardNumber}
-                      onChangeText={setCardNumber}
-                      placeholder="4242 4242 4242 4242"
+                      style={styles.promoTextInput}
+                      value={promoCodeInput}
+                      onChangeText={setPromoCodeInput}
+                      placeholder="e.g. HACKATHON50"
                       placeholderTextColor="#A0A0A0"
-                      keyboardType="numeric"
+                      autoCapitalize="characters"
                     />
                   </View>
-
-                  <View style={styles.cardRow}>
-                    <View style={styles.cardHalfInput}>
-                      <Text style={styles.cardFormLabel}>Expiry Date</Text>
-                      <View style={styles.cardInputWrapperSmall}>
-                        <TextInput
-                          style={styles.cardTextInput}
-                          value={cardExpiry}
-                          onChangeText={setCardExpiry}
-                          placeholder="MM/YY"
-                          placeholderTextColor="#A0A0A0"
-                          keyboardType="numeric"
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.cardHalfInput}>
-                      <Text style={styles.cardFormLabel}>CVC / CVV</Text>
-                      <View style={styles.cardInputWrapperSmall}>
-                        <TextInput
-                          style={styles.cardTextInput}
-                          value={cardCvc}
-                          onChangeText={setCardCvc}
-                          placeholder="123"
-                          placeholderTextColor="#A0A0A0"
-                          keyboardType="numeric"
-                          secureTextEntry
-                        />
-                      </View>
-                    </View>
-                  </View>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={handleApplyPromoCode}
+                    style={styles.applyCodeBtn}
+                  >
+                    <Text style={styles.applyCodeBtnText}>Apply</Text>
+                  </TouchableOpacity>
                 </View>
-              )}
-
-              {/* Promo / Discount Code Section */}
-              <Text style={styles.checkoutSectionTitle}>Promo Code</Text>
-              <View style={styles.promoCodeContainer}>
-                <View style={styles.promoInputWrapper}>
-                  <TagIcon size={16} color="#1F6F5F" />
-                  <TextInput
-                    style={styles.promoTextInput}
-                    value={promoCodeInput}
-                    onChangeText={setPromoCodeInput}
-                    placeholder="e.g. PROMO20"
-                    placeholderTextColor="#A0A0A0"
-                    autoCapitalize="characters"
-                  />
-                </View>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={handleApplyPromoCode}
-                  style={styles.applyCodeBtn}
-                >
-                  <Text style={styles.applyCodeBtnText}>Apply</Text>
-                </TouchableOpacity>
-              </View>
-
-              {appliedDiscount && (
-                <View style={styles.appliedDiscountBadge}>
-                  <CheckCircleIcon size={16} color="#27AE60" />
-                  <Text style={styles.appliedDiscountText}>
-                    Code <Text style={{ fontWeight: '700' }}>{appliedDiscount.code}</Text> applied (-${discountAmount.toFixed(2)})
-                  </Text>
-                </View>
-              )}
-
-              {discountError ? (
-                <Text style={styles.discountErrorText}>{discountError}</Text>
-              ) : null}
-
-              {/* Price Breakdown */}
-              <View style={styles.breakdownCard}>
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>Subtotal</Text>
-                  <Text style={styles.breakdownValue}>${basePrice.toFixed(2)}</Text>
-                </View>
-
-                {discountAmount > 0 && (
-                  <View style={styles.breakdownRow}>
-                    <Text style={[styles.breakdownLabel, { color: '#27AE60' }]}>
-                      Discount ({appliedDiscount?.percentage ? `${appliedDiscount.percentage}%` : 'Promo'})
-                    </Text>
-                    <Text style={[styles.breakdownValue, { color: '#27AE60' }]}>
-                      -${discountAmount.toFixed(2)}
+                {appliedDiscount ? (
+                  <View style={styles.appliedDiscountBadge}>
+                    <CheckCircleIcon size={16} color="#27AE60" />
+                    <Text style={styles.appliedDiscountText}>
+                      Code <Text style={{ fontWeight: '700' }}>{appliedDiscount.code}</Text> verified ({appliedDiscount.amount}% demo discount)
                     </Text>
                   </View>
-                )}
-
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>Tax / VAT</Text>
-                  <Text style={styles.breakdownValue}>Included ($0.00)</Text>
-                </View>
-
-                <View style={styles.breakdownDivider} />
-
-                <View style={styles.breakdownTotalRow}>
-                  <Text style={styles.breakdownTotalLabel}>Total Due Today</Text>
-                  <Text style={styles.breakdownTotalValue}>${finalPrice.toFixed(2)}</Text>
-                </View>
-              </View>
-
-              {/* Security Badge */}
-              <View style={styles.securityBadge}>
-                <ShieldCheckIcon size={18} color="#1F6F5F" />
-                <Text style={styles.securityBadgeText}>
-                  Powered by RevenueCat Secure Billing • 256-Bit SSL
+                ) : null}
+                {discountError ? <Text style={styles.discountErrorText}>{discountError}</Text> : null}
+                <Text style={styles.promoDisclaimer}>
+                  Promo codes are shown for the competition demo. The final native store price is controlled by RevenueCat.
                 </Text>
               </View>
-
-              {/* Action Button: Pay Now */}
-              <View style={styles.payButtonWrapper}>
+              <View style={styles.subscriptionActions}>
                 <Button
-                  title={`Pay $${finalPrice.toFixed(2)} with RevenueCat`}
-                  variant="primary"
+                  title="Restore Purchases"
+                  variant="outline"
                   fullWidth
-                  loading={isProcessingPayment}
-                  onPress={handleExecutePayment}
+                  onPress={handleRestorePurchases}
                 />
+                {subscriptionTier ? (
+                  <Button
+                    title="Manage or Cancel Subscription"
+                    variant="outline"
+                    fullWidth
+                    onPress={handleManageSubscription}
+                  />
+                ) : null}
               </View>
             </>
-          )}
+          </>
         </ScrollView>
 
         {/* Floating Bottom-Middle Navbar */}
@@ -977,6 +784,23 @@ const styles = StyleSheet.create({
   },
   planActionWrapper: {
     marginTop: 4,
+  },
+  subscriptionActions: {
+    width: '100%',
+    maxWidth: 353,
+    gap: 10,
+    marginTop: 16,
+  },
+  promoSection: {
+    width: '100%',
+    maxWidth: 353,
+    marginTop: 20,
+  },
+  promoDisclaimer: {
+    marginTop: 8,
+    color: '#828282',
+    fontSize: 11,
+    lineHeight: 16,
   },
   disabledBtnStyle: {
     backgroundColor: '#E8F8F0',
