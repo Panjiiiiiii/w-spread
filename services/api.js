@@ -62,15 +62,6 @@ export async function registerWithEmail(email, password, name) {
   return payload?.data || { email, name: name || email.split('@')[0] || 'User' };
 }
 
-export async function loginWithGoogle(idToken) {
-  const { payload, headers } = await request('/auth/google', {
-    method: 'POST',
-    body: JSON.stringify({ idToken }),
-  });
-  await persistSession(headers);
-  return payload?.data;
-}
-
 export async function updateProfileImage(imageUri) {
   const formData = new FormData();
   const fileName = imageUri.split('/').pop() || 'profile-image.jpg';

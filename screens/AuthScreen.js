@@ -12,8 +12,6 @@ import {
   Alert,
   KeyboardAvoidingView,
 } from 'react-native';
-import * as AuthSession from 'expo-auth-session';
-import * as Google from 'expo-auth-session/providers/google';
 import {
   AppLogo,
   Button,
@@ -22,16 +20,8 @@ import {
   UserIcon,
   EyeIcon,
   EyeOffIcon,
-  GoogleIcon,
 } from '../components';
-import { loginWithEmail, loginWithGoogle, registerWithEmail } from '../services/api';
-
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-const GOOGLE_CLIENT_IDS_CONFIGURED = Boolean(
-  GOOGLE_WEB_CLIENT_ID || GOOGLE_IOS_CLIENT_ID || GOOGLE_ANDROID_CLIENT_ID
-);
+import { loginWithEmail, registerWithEmail } from '../services/api';
 
 export default function AuthScreen({
   onLoginSuccess,
@@ -47,15 +37,6 @@ export default function AuthScreen({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [request, , promptAsync] = Google.useAuthRequest({
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-    iosClientId: GOOGLE_IOS_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-    clientId: GOOGLE_WEB_CLIENT_ID || GOOGLE_IOS_CLIENT_ID || GOOGLE_ANDROID_CLIENT_ID || 'missing-google-client-id',
-    responseType: AuthSession.ResponseType.IdToken,
-    scopes: ['openid', 'profile', 'email'],
-    selectAccount: true,
-  });
 
   // Form Validation & Submission
   const handleSubmit = async () => {
@@ -95,40 +76,6 @@ export default function AuthScreen({
     } catch (error) {
       setIsLoading(false);
       Alert.alert('Authentication Failed', error.message);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    if (!GOOGLE_CLIENT_IDS_CONFIGURED) {
-      Alert.alert(
-        'Google Sign-In',
-        'Google sign-in is not configured. Add the Google client IDs to the app environment.'
-      );
-      return;
-    }
-    if (!request) {
-      Alert.alert('Google Sign-In', 'Google sign-in is still loading. Please try again.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const result = await promptAsync();
-      if (result.type === 'cancel' || result.type === 'dismiss') return;
-      if (result.type !== 'success' || !result.params?.id_token) {
-        throw new Error('Google did not return an ID token.');
-      }
-
-      const userData = await loginWithGoogle(result.params.id_token);
-      if (authMode === 'register') {
-        onRegisterSuccess?.(userData);
-      } else {
-        onLoginSuccess?.(userData);
-      }
-    } catch (error) {
-      Alert.alert('Google Sign-In Failed', error.message || 'Unable to sign in with Google.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -299,26 +246,6 @@ export default function AuthScreen({
                 />
               </View>
             </View>
-
-            {/* Or Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google Sign In Button */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleGoogleSignIn}
-              disabled={isLoading}
-              style={styles.googleButton}
-            >
-              <GoogleIcon size={20} />
-              <Text style={styles.googleButtonText}>
-                {authMode === 'login' ? 'Continue with Google' : 'Sign Up with Google'}
-              </Text>
-            </TouchableOpacity>
 
             {/* Bottom Toggle Prompt */}
             <View style={styles.bottomPromptRow}>
