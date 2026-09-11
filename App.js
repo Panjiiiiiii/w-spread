@@ -142,8 +142,8 @@ export default function App() {
     setActiveTab('home');
   };
 
-  const handleSaveProfileImage = async (imageUri) => {
-    const userData = await updateProfileImage(imageUri);
+  const handleSaveProfileImage = async (imageUri, imageMetadata) => {
+    const userData = await updateProfileImage(imageUri, imageMetadata);
     const imageUrl = userData?.imageUrl || imageUri;
     setProfileImageUri(imageUrl);
     if (userData) {

@@ -20,6 +20,7 @@ export default function EditProfileScreen({
   onBack,
 }) {
   const [selectedImageUri, setSelectedImageUri] = useState(imageUri);
+  const [selectedImageMetadata, setSelectedImageMetadata] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
   const handleChooseImage = async () => {
@@ -37,10 +38,17 @@ export default function EditProfileScreen({
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      base64: true,
     });
 
     if (!result.canceled && result.assets?.[0]?.uri) {
-      setSelectedImageUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setSelectedImageUri(asset.uri);
+      setSelectedImageMetadata({
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+        base64: asset.base64,
+      });
     }
   };
 
@@ -51,7 +59,7 @@ export default function EditProfileScreen({
     }
     setIsSaving(true);
     try {
-      await onSave?.(selectedImageUri);
+      await onSave?.(selectedImageUri, selectedImageMetadata);
     } catch (error) {
       Alert.alert('Upload Failed', error.message || 'Unable to update your profile photo.');
     } finally {

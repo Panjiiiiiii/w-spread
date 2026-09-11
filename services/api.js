@@ -62,25 +62,23 @@ export async function registerWithEmail(email, password, name) {
   return payload?.data || { email, name: name || email.split('@')[0] || 'User' };
 }
 
-export async function updateProfileImage(imageUri) {
-  const formData = new FormData();
-  const fileName = imageUri.split('/').pop() || 'profile-image.jpg';
+export async function updateProfileImage(imageUri, imageMetadata = {}) {
+  const fileName = imageMetadata.fileName
+    || imageUri.split('/').pop()
+    || 'profile-image.jpg';
   const extension = fileName.split('.').pop()?.toLowerCase();
-  const mimeType = extension === 'png'
-    ? 'image/png'
-    : extension === 'webp'
-      ? 'image/webp'
-      : 'image/jpeg';
-
-  formData.append('image', {
-    uri: imageUri,
-    name: fileName,
-    type: mimeType,
-  });
+  const mimeType = imageMetadata.mimeType
+    || (extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg');
+  if (!imageMetadata.base64) {
+    throw new Error('The selected image data is unavailable. Please choose the image again.');
+  }
 
   const { payload } = await request('/auth/me/avatar', {
     method: 'PATCH',
-    body: formData,
+    body: JSON.stringify({
+      imageBase64: `data:${mimeType};base64,${imageMetadata.base64}`,
+      fileName,
+    }),
   });
   return payload?.data;
 }
