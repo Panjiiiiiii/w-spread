@@ -24,6 +24,7 @@ export default function HomeScreen({
   onTabPress,
   navigation,
   userName = 'Adams',
+  profileImageUri,
   streakCount = 12,
   runwayDays = 142,
   cashAmount = '15.000',
@@ -90,7 +91,7 @@ export default function HomeScreen({
             {/* User Avatar */}
             <TouchableOpacity activeOpacity={0.8} style={styles.avatarWrapper}>
               <Image
-                source={require('../assets/avatar.png')}
+                source={profileImageUri ? { uri: profileImageUri } : require('../assets/avatar.png')}
                 style={styles.avatarImage}
                 defaultSource={require('../assets/icon.png')}
               />

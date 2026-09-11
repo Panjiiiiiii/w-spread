@@ -2,6 +2,7 @@
   "expo": {
     "name": "wspread-app",
     "slug": "wspread-app",
+    "scheme": "wspread",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -30,9 +31,6 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-secure-store"
-    ]
+    }
   }
 }

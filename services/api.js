@@ -45,24 +45,55 @@ async function persistSession(responseHeaders) {
 }
 
 export async function loginWithEmail(email, password) {
-  const { headers } = await request('/auth/login', {
+  const { payload, headers } = await request('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
   await persistSession(headers);
-  return { email, name: email.split('@')[0] || 'User' };
+  return payload?.data || { email, name: email.split('@')[0] || 'User' };
 }
 
 export async function registerWithEmail(email, password, name) {
-  const { headers } = await request('/auth/register', {
+  const { payload, headers } = await request('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ email, password, name }),
   });
   await persistSession(headers);
-  return { email, name: name || email.split('@')[0] || 'User' };
+  return payload?.data || { email, name: name || email.split('@')[0] || 'User' };
+}
+
+export async function loginWithGoogle(idToken) {
+  const { payload, headers } = await request('/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+  await persistSession(headers);
+  return payload?.data;
+}
+
+export async function updateProfileImage(imageUri) {
+  const formData = new FormData();
+  const fileName = imageUri.split('/').pop() || 'profile-image.jpg';
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  const mimeType = extension === 'png'
+    ? 'image/png'
+    : extension === 'webp'
+      ? 'image/webp'
+      : 'image/jpeg';
+
+  formData.append('image', {
+    uri: imageUri,
+    name: fileName,
+    type: mimeType,
+  });
+
+  const { payload } = await request('/auth/me/avatar', {
+    method: 'PATCH',
+    body: formData,
+  });
+  return payload?.data;
 }
 
 export async function clearSession() {
   await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY);
 }
-

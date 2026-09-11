@@ -9,7 +9,7 @@ import {
   LogHistoryScreen,
   EditProfileScreen,
 } from './screens';
-import { clearSession } from './services/api';
+import { clearSession, updateProfileImage } from './services/api';
 
 const INITIAL_LOGS = [
   {
@@ -142,8 +142,13 @@ export default function App() {
     setActiveTab('home');
   };
 
-  const handleSaveProfileImage = (imageUri) => {
-    setProfileImageUri(imageUri);
+  const handleSaveProfileImage = async (imageUri) => {
+    const userData = await updateProfileImage(imageUri);
+    const imageUrl = userData?.imageUrl || imageUri;
+    setProfileImageUri(imageUrl);
+    if (userData) {
+      setUser((prev) => ({ ...prev, ...userData }));
+    }
     setActiveTab('profile');
   };
 
@@ -304,6 +309,7 @@ export default function App() {
             activeTab={activeTab}
             onTabPress={handleTabPress}
             userName={user.name}
+            profileImageUri={profileImageUri}
             onSimulateRunway={(params) => handleTabPress('prediction', params)}
           />
         );

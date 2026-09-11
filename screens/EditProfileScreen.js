@@ -20,6 +20,7 @@ export default function EditProfileScreen({
   onBack,
 }) {
   const [selectedImageUri, setSelectedImageUri] = useState(imageUri);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleChooseImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -43,12 +44,19 @@ export default function EditProfileScreen({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selectedImageUri) {
       Alert.alert('Choose an Image', 'Select a profile image before saving.');
       return;
     }
-    onSave?.(selectedImageUri);
+    setIsSaving(true);
+    try {
+      await onSave?.(selectedImageUri);
+    } catch (error) {
+      Alert.alert('Upload Failed', error.message || 'Unable to update your profile photo.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -94,6 +102,7 @@ export default function EditProfileScreen({
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handleSave}
+          disabled={isSaving}
           style={styles.saveButton}
         >
           <CheckCircleIcon size={19} color="#FFFFFF" />
@@ -176,4 +185,3 @@ const styles = StyleSheet.create({
   },
   saveButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 });
-
