@@ -16,7 +16,6 @@ const PRODUCT_IDS = {
 let isConfigured = false;
 
 function getApiKey() {
-  if (Platform.OS === 'ios') return process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
   if (Platform.OS === 'android') return process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
   return null;
 }
@@ -24,7 +23,7 @@ function getApiKey() {
 export async function configureRevenueCat(appUserId) {
   const apiKey = getApiKey();
   if (!apiKey) {
-    throw new Error('RevenueCat is not configured for this platform.');
+    throw new Error('RevenueCat is configured for Android only.');
   }
 
   if (!isConfigured) {
