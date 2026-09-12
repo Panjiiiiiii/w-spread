@@ -7,7 +7,6 @@ import {
   StatusBar,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Platform,
   Alert,
   Modal,
@@ -19,8 +18,6 @@ import {
   CrownIcon,
   DiamondIcon,
   CheckMarkSmallIcon,
-  CheckCircleIcon,
-  TagIcon,
   SparkleIcon,
 } from '../components';
 import {
@@ -84,9 +81,6 @@ export default function MembershipScreen({
 }) {
   const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
   const [selectedPlan, setSelectedPlan] = useState(MEMBERSHIP_PLANS[0]); // default Business
-  const [promoCodeInput, setPromoCodeInput] = useState('');
-  const [appliedDiscount, setAppliedDiscount] = useState(null);
-  const [discountError, setDiscountError] = useState('');
 
   // Checkout State
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -121,33 +115,6 @@ export default function MembershipScreen({
     } finally {
       setIsProcessingPayment(false);
     }
-  };
-
-  const handleApplyPromoCode = () => {
-    const code = promoCodeInput.trim().toUpperCase();
-    setDiscountError('');
-    setAppliedDiscount(null);
-
-    if (!code) {
-      setDiscountError('Please enter a promo code.');
-      return;
-    }
-
-    const discounts = {
-      PROMO20: 20,
-      WSPREAD20: 20,
-      HACKATHON50: 50,
-      WSPREAD50: 50,
-      REVENUECAT: 5,
-    };
-    const discount = discounts[code];
-    if (!discount) {
-      setDiscountError('Invalid or expired promo code.');
-      return;
-    }
-
-    setAppliedDiscount({ code, amount: discount });
-    Alert.alert('Promo Applied', `${code} is valid for the competition demo.`);
   };
 
   const handleRestorePurchases = async () => {
@@ -359,41 +326,6 @@ export default function MembershipScreen({
                     </View>
                   );
                 })}
-              </View>
-              <View style={styles.promoSection}>
-                <Text style={styles.checkoutSectionTitle}>Competition Promo Code</Text>
-                <View style={styles.promoCodeContainer}>
-                  <View style={styles.promoInputWrapper}>
-                    <TagIcon size={16} color="#1F6F5F" />
-                    <TextInput
-                      style={styles.promoTextInput}
-                      value={promoCodeInput}
-                      onChangeText={setPromoCodeInput}
-                      placeholder="e.g. HACKATHON50"
-                      placeholderTextColor="#A0A0A0"
-                      autoCapitalize="characters"
-                    />
-                  </View>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={handleApplyPromoCode}
-                    style={styles.applyCodeBtn}
-                  >
-                    <Text style={styles.applyCodeBtnText}>Apply</Text>
-                  </TouchableOpacity>
-                </View>
-                {appliedDiscount ? (
-                  <View style={styles.appliedDiscountBadge}>
-                    <CheckCircleIcon size={16} color="#27AE60" />
-                    <Text style={styles.appliedDiscountText}>
-                      Code <Text style={{ fontWeight: '700' }}>{appliedDiscount.code}</Text> verified ({appliedDiscount.amount}% demo discount)
-                    </Text>
-                  </View>
-                ) : null}
-                {discountError ? <Text style={styles.discountErrorText}>{discountError}</Text> : null}
-                <Text style={styles.promoDisclaimer}>
-                  Promo codes are shown for the competition demo. The final native store price is controlled by RevenueCat.
-                </Text>
               </View>
               <View style={styles.subscriptionActions}>
                 <Button
@@ -791,17 +723,6 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 16,
   },
-  promoSection: {
-    width: '100%',
-    maxWidth: 353,
-    marginTop: 20,
-  },
-  promoDisclaimer: {
-    marginTop: 8,
-    color: '#828282',
-    fontSize: 11,
-    lineHeight: 16,
-  },
   disabledBtnStyle: {
     backgroundColor: '#E8F8F0',
     borderColor: '#6FCF97',
@@ -986,68 +907,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
     padding: 0,
-  },
-
-  // Promo Code
-  promoCodeContainer: {
-    width: '100%',
-    maxWidth: 353,
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 6,
-  },
-  promoInputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    height: 44,
-    borderWidth: 1,
-    borderColor: '#1F6F5F',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    backgroundColor: '#FFFFFF',
-  },
-  promoTextInput: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1F6F5F',
-    padding: 0,
-  },
-  applyCodeBtn: {
-    backgroundColor: '#1F6F5F',
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  applyCodeBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  appliedDiscountBadge: {
-    width: '100%',
-    maxWidth: 353,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#E8F8F0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  appliedDiscountText: {
-    fontSize: 12,
-    color: '#27AE60',
-  },
-  discountErrorText: {
-    fontSize: 11,
-    color: '#EB5757',
-    alignSelf: 'flex-start',
-    marginBottom: 8,
   },
 
   // Breakdown Card

@@ -59,10 +59,23 @@ function packageMatchesTier(packageItem, tier, billingCycle) {
 export async function purchaseTier(tier, billingCycle) {
   const offerings = await Purchases.getOfferings();
   const packages = offerings.current?.availablePackages || [];
+  
+  // Debug: Log available packages to help diagnose configuration issues
+  if (__DEV__) {
+    console.log('RevenueCat offerings.current:', offerings.current?.identifier);
+    console.log('Available packages:', packages.map(p => ({
+      identifier: p.identifier,
+      productIdentifier: p.product?.identifier,
+      tier,
+      billingCycle,
+    })));
+  }
+  
   const packageItem = packages.find((item) => packageMatchesTier(item, tier, billingCycle));
 
   if (!packageItem) {
-    throw new Error(`RevenueCat package is not configured for ${tier} ${billingCycle}.`);
+    const lookingFor = PRODUCT_IDS[`${tier}${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}`];
+    throw new Error(`RevenueCat package is not configured for ${tier} ${billingCycle}. Looking for product ID: ${lookingFor || 'fallback'}`);
   }
 
   const result = await Purchases.purchasePackage(packageItem);
