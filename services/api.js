@@ -5,14 +5,20 @@ export const API_BASE_URL =
 
 const SESSION_TOKEN_KEY = 'wspread_session_token';
 
+function formatAuthorizationHeader(token) {
+  if (!token) return null;
+  return /^(Bearer|Basic)\s+\S+/i.test(token) ? token : `Bearer ${token}`;
+}
+
 async function request(path, options = {}) {
   const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
+  const authorization = formatAuthorizationHeader(token);
   const headers = {
     Accept: 'application/json',
     ...(options.body instanceof FormData
       ? {}
       : { 'Content-Type': 'application/json' }),
-    ...(token ? { Authorization: token } : {}),
+    ...(authorization ? { Authorization: authorization } : {}),
     ...options.headers,
   };
 
@@ -34,7 +40,7 @@ function getSessionToken(headers) {
   if (!token) {
     throw new Error('The auth API did not return an Authorization header.');
   }
-  return token;
+  return token.trim();
 }
 
 async function persistSession(responseHeaders) {
@@ -69,16 +75,24 @@ export async function updateProfileImage(imageUri, imageMetadata = {}) {
   const extension = fileName.split('.').pop()?.toLowerCase();
   const mimeType = imageMetadata.mimeType
     || (extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg');
-  if (!imageMetadata.base64) {
-    throw new Error('The selected image data is unavailable. Please choose the image again.');
-  }
+  const body = imageMetadata.base64
+    ? JSON.stringify({
+        imageBase64: `data:${mimeType};base64,${imageMetadata.base64}`,
+        fileName,
+      })
+    : (() => {
+        const formData = new FormData();
+        formData.append('image', {
+          uri: imageUri,
+          name: fileName,
+          type: mimeType,
+        });
+        return formData;
+      })();
 
   const { payload } = await request('/auth/me/avatar', {
     method: 'PATCH',
-    body: JSON.stringify({
-      imageBase64: `data:${mimeType};base64,${imageMetadata.base64}`,
-      fileName,
-    }),
+    body,
   });
   return payload?.data;
 }

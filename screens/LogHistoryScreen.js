@@ -8,16 +8,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
-  Alert,
 } from 'react-native';
 import {
   Navbar,
   ArrowLeftIcon,
   TrendingUpIcon,
   ChevronRightIcon,
-  TrashIcon,
   HistoryIcon,
-  DocumentFillIcon,
 } from '../components';
 
 export default function LogHistoryScreen({
@@ -26,19 +23,15 @@ export default function LogHistoryScreen({
   onBack,
   logs = [],
   onSelectLog,
-  onClearLogs,
 }) {
-  const [selectedFilter, setSelectedFilter] = useState('all'); // 'all' | 'prediction' | 'estatement'
+  const [selectedFilter, setSelectedFilter] = useState('all'); // 'all' | 'prediction'
 
   const filteredLogs = logs.filter((log) => {
     if (selectedFilter === 'prediction') return log.type === 'prediction';
-    if (selectedFilter === 'estatement') return log.type === 'estatement';
     return true;
   });
 
   const predictionCount = logs.filter((l) => l.type === 'prediction').length;
-  const estatementCount = logs.filter((l) => l.type === 'estatement').length;
-
   const handleLogItemPress = (log) => {
     if (onSelectLog) {
       onSelectLog(log);
@@ -58,23 +51,6 @@ export default function LogHistoryScreen({
         });
       }
     }
-  };
-
-  const handleClearAll = () => {
-    Alert.alert(
-      'Clear Log History',
-      'Are you sure you want to clear all prediction and e-statement history logs?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear All',
-          style: 'destructive',
-          onPress: () => {
-            if (onClearLogs) onClearLogs();
-          },
-        },
-      ]
-    );
   };
 
   return (
@@ -104,24 +80,13 @@ export default function LogHistoryScreen({
 
             <Text style={styles.headerTitle}>Activity & Logs</Text>
 
-            {logs.length > 0 ? (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={handleClearAll}
-                style={styles.clearButton}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <TrashIcon size={18} color="#EB5757" />
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.headerPlaceholder} />
-            )}
+            <View style={styles.headerPlaceholder} />
           </View>
 
           {/* Subtitle / Description */}
           <View style={styles.headlineSection}>
             <Text style={styles.mainSubtitle}>
-              Review past simulation decisions and e-statement cashflow analyses. Tap any log entry to jump directly to its analytics.
+              Review prediction history saved to your account. Tap any entry to view its analytics.
             </Text>
           </View>
 
@@ -167,27 +132,6 @@ export default function LogHistoryScreen({
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setSelectedFilter('estatement')}
-              style={[
-                styles.filterPill,
-                selectedFilter === 'estatement' && styles.filterPillActive,
-              ]}
-            >
-              <DocumentFillIcon
-                size={14}
-                color={selectedFilter === 'estatement' ? '#FFFFFF' : '#1F6F5F'}
-              />
-              <Text
-                style={[
-                  styles.filterPillText,
-                  selectedFilter === 'estatement' && styles.filterPillTextActive,
-                ]}
-              >
-                E-Statement ({estatementCount})
-              </Text>
-            </TouchableOpacity>
           </View>
 
           {/* Log Entries List */}
@@ -196,13 +140,9 @@ export default function LogHistoryScreen({
               <View style={styles.emptyIconCircle}>
                 <HistoryIcon size={32} color="#1F6F5F" />
               </View>
-              <Text style={styles.emptyTitle}>No Activity Logs Found</Text>
+              <Text style={styles.emptyTitle}>No Prediction History Found</Text>
               <Text style={styles.emptySubtitle}>
-                {selectedFilter === 'prediction'
-                  ? 'Run a runway scenario simulation in Prediction to create your first log.'
-                  : selectedFilter === 'estatement'
-                  ? 'Upload and analyze a bank PDF in E-statement to record analytics logs.'
-                  : 'Start using Prediction simulations or E-statement analytics to track your decisions here.'}
+                Run a runway scenario simulation in Prediction to create your first log.
               </Text>
             </View>
           ) : (
@@ -222,18 +162,12 @@ export default function LogHistoryScreen({
                       <View
                         style={[
                           styles.typeBadge,
-                          isPrediction
-                            ? styles.predictionBadge
-                            : styles.estatementBadge,
+                          styles.predictionBadge,
                         ]}
                       >
-                        {isPrediction ? (
-                          <TrendingUpIcon size={12} color="#1F6F5F" />
-                        ) : (
-                          <DocumentFillIcon size={12} color="#1F6F5F" />
-                        )}
+                        <TrendingUpIcon size={12} color="#1F6F5F" />
                         <Text style={styles.typeBadgeText}>
-                          {isPrediction ? 'Prediction Simulation' : 'E-Statement Analytics'}
+                          Prediction Simulation
                         </Text>
                       </View>
 

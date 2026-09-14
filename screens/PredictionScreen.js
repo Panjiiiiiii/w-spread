@@ -32,7 +32,6 @@ export default function PredictionScreen({
   initialInjectCapital = '10.000',
   initialFreezeHiring = true,
   initialPrediction = null,
-  onLogCreated,
   onPredictionCreated,
 }) {
   const [currentStep, setCurrentStep] = useState(initialStep);
@@ -223,28 +222,27 @@ export default function PredictionScreen({
                 </View>
               </View>
 
-              <View style={styles.adjustmentsRow}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Payroll / month ($)</Text>
-                  <View style={styles.numberInputContainer}>
-                    <TextInput
-                      style={styles.numberInput}
-                      value={payrollImpact}
-                      onChangeText={setPayrollImpact}
-                      keyboardType="numeric"
-                    />
-                  </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Payroll / month ($)</Text>
+                <View style={styles.numberInputContainer}>
+                  <TextInput
+                    style={styles.numberInput}
+                    value={payrollImpact}
+                    onChangeText={setPayrollImpact}
+                    keyboardType="numeric"
+                  />
                 </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Vendor / month ($)</Text>
-                  <View style={styles.numberInputContainer}>
-                    <TextInput
-                      style={styles.numberInput}
-                      value={vendorImpact}
-                      onChangeText={setVendorImpact}
-                      keyboardType="numeric"
-                    />
-                  </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Vendor / month ($)</Text>
+                <View style={styles.numberInputContainer}>
+                  <TextInput
+                    style={styles.numberInput}
+                    value={vendorImpact}
+                    onChangeText={setVendorImpact}
+                    keyboardType="numeric"
+                  />
                 </View>
               </View>
 

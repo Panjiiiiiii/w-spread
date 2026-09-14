@@ -21,59 +21,6 @@ import {
   getSubscriptionTier,
 } from './services/revenueCat';
 
-const INITIAL_LOGS = [
-  {
-    id: 'log-1',
-    type: 'prediction',
-    title: 'Runway Extended: 162 Days (+20 days)',
-    description: 'Scenario test: Cut expenses by 20%, injected $10.000 capital, and paused hiring.',
-    timestamp: 'Today, 14:32',
-    params: {
-      cutExpense: 20,
-      injectCapital: '10.000',
-      freezeHiring: true,
-      simulatedDays: 162,
-      diffDays: 20,
-    },
-  },
-  {
-    id: 'log-2',
-    type: 'estatement',
-    title: 'Expense Breakdown Analyzed (BCA_JanFeb2026.pdf)',
-    description: 'Categorized $120.000 total burn rate across Operations, Marketing, and Software.',
-    timestamp: 'Yesterday, 10:15',
-    params: {
-      fileName: 'BCA_Statement_JanFeb2026.pdf',
-      totalAmount: '$ 120.000',
-    },
-  },
-  {
-    id: 'log-3',
-    type: 'prediction',
-    title: 'Runway Extended: 194 Days (+52 days)',
-    description: 'Aggressive burn reduction: Cut expenses by 80% with $20.000.000 capital infusion.',
-    timestamp: '02 Sep 2026, 16:40',
-    params: {
-      cutExpense: 80,
-      injectCapital: '20.000.000',
-      freezeHiring: true,
-      simulatedDays: 194,
-      diffDays: 52,
-    },
-  },
-  {
-    id: 'log-4',
-    type: 'estatement',
-    title: 'Expense Breakdown Analyzed (Mandiri_Corporate_Q3.pdf)',
-    description: 'Analyzed corporate burn: Identified 50% allocation to payroll and operations.',
-    timestamp: '28 Aug 2026, 11:20',
-    params: {
-      fileName: 'Mandiri_Corporate_Q3.pdf',
-      totalAmount: '$ 85.000',
-    },
-  },
-];
-
 export default function App() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -111,20 +58,7 @@ export default function App() {
   });
 
   // Activity Logs State
-  const [activityLogs, setActivityLogs] = useState(INITIAL_LOGS);
-
-  const handleAddLog = (newLog) => {
-    const logItem = {
-      id: `log-${Date.now()}`,
-      timestamp: 'Just now',
-      ...newLog,
-    };
-    setActivityLogs((prev) => [logItem, ...prev]);
-  };
-
-  const handleClearLogs = () => {
-    setActivityLogs([]);
-  };
+  const [activityLogs, setActivityLogs] = useState([]);
 
   const loadPredictionHistory = async () => {
     try {
@@ -137,29 +71,22 @@ export default function App() {
         timestamp: new Date(prediction.createdAt).toLocaleString(),
         params: { prediction },
       }));
-      setActivityLogs((previous) => [
-        ...logs,
-        ...previous.filter((log) => !logs.some((item) => item.id === log.id)),
-      ]);
+      setActivityLogs(logs);
       if (predictions[0]) setLatestPrediction(predictions[0]);
     } catch (error) {
+      setActivityLogs([]);
       console.warn('Prediction history refresh failed:', error.message);
     }
   };
 
-  const handlePredictionCreated = (prediction) => {
+  const handlePredictionCreated = async (prediction) => {
     setLatestPrediction(prediction);
-    handleAddLog({
-      id: prediction.id,
-      type: 'prediction',
-      title: `Projected Balance: $${Number(prediction.predictedBalance || 0).toLocaleString()}`,
-      description: `${prediction.timeframeMonths}-month forecast with ${prediction.riskLevel} risk.`,
-      params: { prediction },
-    });
+    await loadPredictionHistory();
   };
 
   // Login handler -> direct to Home / Dashboard
   const handleLoginSuccess = async (userData) => {
+    setProfileImageUri(userData?.imageUrl || null);
     if (userData?.name) {
       setUser((prev) => ({ ...prev, ...userData }));
     }
@@ -171,7 +98,7 @@ export default function App() {
       console.warn('RevenueCat initialization failed:', error.message);
       setSubscriptionTier(null);
     }
-    await refreshMembership();
+    await refreshMembership(3);
     await loadPredictionHistory();
     setIsAuthenticated(true);
     setIsOnboarding(false);
@@ -180,6 +107,7 @@ export default function App() {
 
   // Register handler -> redirect to Membership page (with skip option)
   const handleRegisterSuccess = async (userData) => {
+    setProfileImageUri(userData?.imageUrl || null);
     if (userData?.name) {
       setUser((prev) => ({ ...prev, ...userData }));
     }
@@ -191,16 +119,20 @@ export default function App() {
       console.warn('RevenueCat initialization failed:', error.message);
       setSubscriptionTier(null);
     }
-    await refreshMembership();
+    await refreshMembership(3);
     await loadPredictionHistory();
     setIsAuthenticated(true);
     setIsOnboarding(true);
     setActiveTab('membership');
   };
 
-  const refreshMembership = async () => {
+  const refreshMembership = async (retries = 0) => {
     try {
       const membership = await getMyMembership();
+      if (!membership?.tier && retries > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return refreshMembership(retries - 1);
+      }
       setSubscriptionTier(membership?.tier || null);
       setMembershipInfo((prev) => ({
         ...prev,
@@ -222,6 +154,7 @@ export default function App() {
     setIsAuthenticated(false);
     setSubscriptionTier(null);
     setLatestPrediction(null);
+    setActivityLogs([]);
     setMembershipInfo((prev) => ({ ...prev, role: 'The Owner', validDays: 0, totalDays: 0, expiryDate: 'No active membership' }));
     setIsOnboarding(false);
     setActiveTab('home');
@@ -239,7 +172,8 @@ export default function App() {
 
   const handleTabPress = (tabKey, params) => {
     if (tabKey === 'prediction') {
-      if (!subscriptionTier) {
+      const isViewingSavedResult = params?.step === 'results';
+      if (!subscriptionTier && !isViewingSavedResult) {
         setIsOnboarding(false);
         setActiveTab('membership');
         return;
@@ -286,6 +220,7 @@ export default function App() {
       expiryDate: '31 Aug 2028',
     }));
     setIsOnboarding(false);
+    void refreshMembership(3);
   };
 
   // If not authenticated, render AuthScreen
@@ -310,7 +245,6 @@ export default function App() {
             initialCutExpense={predictionParams.cutExpense}
             initialInjectCapital={predictionParams.injectCapital}
             initialFreezeHiring={predictionParams.freezeHiring}
-            onLogCreated={handleAddLog}
             onPredictionCreated={handlePredictionCreated}
             initialPrediction={predictionParams.prediction}
           />
@@ -323,7 +257,6 @@ export default function App() {
             onTabPress={handleTabPress}
             initialStep={estatementParams.step}
             initialFileName={estatementParams.fileName}
-            onLogCreated={handleAddLog}
           />
         );
       case 'membership':
@@ -375,7 +308,6 @@ export default function App() {
                 });
               }
             }}
-            onClearLogs={handleClearLogs}
           />
         );
       case 'profile':

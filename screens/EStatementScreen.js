@@ -47,7 +47,6 @@ export default function EStatementScreen({
   onBack,
   initialStep = 'upload',
   initialFileName,
-  onLogCreated,
 }) {
   // 'upload' or 'results' step
   const [currentStep, setCurrentStep] = useState(initialStep);
@@ -81,18 +80,6 @@ export default function EStatementScreen({
       setIsProcessing(false);
       setCurrentStep('results');
 
-      if (onLogCreated) {
-        const fileLabel = selectedFile?.name || initialFileName || 'BCA_Statement_JanFeb2026.pdf';
-        onLogCreated({
-          type: 'estatement',
-          title: `Expense Breakdown Analyzed (${fileLabel})`,
-          description: 'Calculated burn rate breakdown: Payroll (50%), Marketing (30%), Utilities (20%).',
-          params: {
-            fileName: fileLabel,
-            totalAmount: '$ 120.000',
-          },
-        });
-      }
     }, 1000);
   };
 
