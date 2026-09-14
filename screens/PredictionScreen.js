@@ -10,6 +10,7 @@ import {
   Switch,
   TouchableOpacity,
   Platform,
+  Alert,
 } from 'react-native';
 import {
   Navbar,
@@ -19,6 +20,7 @@ import {
   ArrowLeftIcon,
   SparkleIcon,
 } from '../components';
+import { createPrediction } from '../services/api';
 
 export default function PredictionScreen({
   activeTab = 'prediction',
@@ -29,12 +31,19 @@ export default function PredictionScreen({
   initialCutExpense = 20,
   initialInjectCapital = '10.000',
   initialFreezeHiring = true,
+  initialPrediction = null,
   onLogCreated,
+  onPredictionCreated,
 }) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [cutExpense, setCutExpense] = useState(initialCutExpense);
   const [injectCapital, setInjectCapital] = useState(initialInjectCapital);
   const [freezeHiring, setFreezeHiring] = useState(initialFreezeHiring);
+  const [timeframeMonths, setTimeframeMonths] = useState('12');
+  const [payrollImpact, setPayrollImpact] = useState('0');
+  const [vendorImpact, setVendorImpact] = useState('0');
+  const [prediction, setPrediction] = useState(initialPrediction);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   // Sync state when props change
   useEffect(() => {
@@ -52,6 +61,10 @@ export default function PredictionScreen({
   useEffect(() => {
     if (initialFreezeHiring !== undefined) setFreezeHiring(initialFreezeHiring);
   }, [initialFreezeHiring]);
+
+  useEffect(() => {
+    setPrediction(initialPrediction || null);
+  }, [initialPrediction]);
 
   // Dynamic simulation computation
   const [simulatedDays, setSimulatedDays] = useState(162);
@@ -92,21 +105,21 @@ export default function PredictionScreen({
     }
   };
 
-  const handleSimulateRunway = () => {
-    setCurrentStep('results');
-    if (onLogCreated) {
-      onLogCreated({
-        type: 'prediction',
-        title: `Simulated Runway: ${simulatedDays} Days (+${diffDays} days)`,
-        description: `Cut expense by ${cutExpense}%, injected $${injectCapital}, hiring ${freezeHiring ? 'frozen' : 'active'}.`,
-        params: {
-          cutExpense,
-          injectCapital,
-          freezeHiring,
-          simulatedDays,
-          diffDays,
-        },
+  const handleSimulateRunway = async () => {
+    setIsCalculating(true);
+    try {
+      const result = await createPrediction({
+        timeframeMonths: Number(timeframeMonths),
+        payrollImpact: Number(payrollImpact) || 0,
+        vendorImpact: Number(vendorImpact) || 0,
       });
+      setPrediction(result);
+      setCurrentStep('results');
+      onPredictionCreated?.(result);
+    } catch (error) {
+      Alert.alert('Prediction Failed', error.message || 'Unable to calculate a prediction.');
+    } finally {
+      setIsCalculating(false);
     }
   };
 
@@ -198,6 +211,43 @@ export default function PredictionScreen({
                 />
               </View>
 
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Forecast Timeframe (months)</Text>
+                <View style={styles.numberInputContainer}>
+                  <TextInput
+                    style={styles.numberInput}
+                    value={timeframeMonths}
+                    onChangeText={setTimeframeMonths}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.adjustmentsRow}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Payroll / month ($)</Text>
+                  <View style={styles.numberInputContainer}>
+                    <TextInput
+                      style={styles.numberInput}
+                      value={payrollImpact}
+                      onChangeText={setPayrollImpact}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Vendor / month ($)</Text>
+                  <View style={styles.numberInputContainer}>
+                    <TextInput
+                      style={styles.numberInput}
+                      value={vendorImpact}
+                      onChangeText={setVendorImpact}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
+              </View>
+
               {/* Action Button: Simulate Runway */}
               <View style={styles.buttonContainer}>
                 <Button
@@ -205,12 +255,33 @@ export default function PredictionScreen({
                   variant="primary"
                   fullWidth
                   onPress={handleSimulateRunway}
+                  disabled={isCalculating}
                 />
               </View>
             </>
           ) : (
             /* STEP 2: THE RESULTS VIEW (Node 41:289) */
             <>
+              {prediction ? (
+                <View style={styles.predictionSummary}>
+                  <Text style={styles.predictionSummaryTitle}>Server Forecast</Text>
+                  <Text style={styles.predictionSummaryValue}>
+                    Projected balance: $ {Number(prediction.predictedBalance || 0).toLocaleString()}
+                  </Text>
+                  <Text style={styles.predictionSummaryText}>
+                    Conservative balance: $ {Number(prediction.conservativeBalance || 0).toLocaleString()}
+                  </Text>
+                  <Text style={styles.predictionSummaryText}>
+                    Risk: {prediction.riskLevel} | {prediction.timeframeMonths} months
+                  </Text>
+                  <Text style={styles.predictionSummaryText}>
+                    Average revenue: $ {Number(prediction.averageMonthlyRevenue || 0).toLocaleString()} / month
+                  </Text>
+                  <Text style={styles.predictionSummaryText}>
+                    Average expenses: $ {Number(prediction.averageMonthlyExpenses || 0).toLocaleString()} / month
+                  </Text>
+                </View>
+              ) : null}
               {/* Hero Runway Card with Result */}
               <View style={styles.cardContainer}>
                 <HeroRunwayCard
@@ -592,5 +663,32 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 353,
     marginTop: 8,
+  },
+  predictionSummary: {
+    width: '100%',
+    maxWidth: 353,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#6FCF97',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  predictionSummaryTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F6F5F',
+    marginBottom: 8,
+  },
+  predictionSummaryValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1F6F5F',
+    marginBottom: 8,
+  },
+  predictionSummaryText: {
+    fontSize: 12,
+    color: '#1F6F5F',
+    lineHeight: 18,
   },
 });

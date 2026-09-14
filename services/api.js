@@ -95,6 +95,19 @@ export async function linkRevenueCatUser(appUserId) {
   });
 }
 
+export async function createPrediction(input) {
+  const { payload } = await request('/analytics/predict', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return payload?.data;
+}
+
+export async function getPredictionHistory() {
+  const { payload } = await request('/analytics/predictions');
+  return payload?.data || [];
+}
+
 export async function clearSession() {
   await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY);
 }

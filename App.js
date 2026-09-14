@@ -12,6 +12,7 @@ import {
 import {
   clearSession,
   getMyMembership,
+  getPredictionHistory,
   linkRevenueCatUser,
   updateProfileImage,
 } from './services/api';
@@ -85,6 +86,7 @@ export default function App() {
   const [profileImageUri, setProfileImageUri] = useState(null);
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [subscriptionTier, setSubscriptionTier] = useState(null);
+  const [latestPrediction, setLatestPrediction] = useState(null);
 
   // User Profile & Membership State
   const [membershipInfo, setMembershipInfo] = useState({
@@ -124,6 +126,38 @@ export default function App() {
     setActivityLogs([]);
   };
 
+  const loadPredictionHistory = async () => {
+    try {
+      const predictions = await getPredictionHistory();
+      const logs = predictions.map((prediction) => ({
+        id: prediction.id,
+        type: 'prediction',
+        title: `Projected Balance: $${Number(prediction.predictedBalance || 0).toLocaleString()}`,
+        description: `${prediction.timeframeMonths}-month forecast with ${prediction.riskLevel} risk.`,
+        timestamp: new Date(prediction.createdAt).toLocaleString(),
+        params: { prediction },
+      }));
+      setActivityLogs((previous) => [
+        ...logs,
+        ...previous.filter((log) => !logs.some((item) => item.id === log.id)),
+      ]);
+      if (predictions[0]) setLatestPrediction(predictions[0]);
+    } catch (error) {
+      console.warn('Prediction history refresh failed:', error.message);
+    }
+  };
+
+  const handlePredictionCreated = (prediction) => {
+    setLatestPrediction(prediction);
+    handleAddLog({
+      id: prediction.id,
+      type: 'prediction',
+      title: `Projected Balance: $${Number(prediction.predictedBalance || 0).toLocaleString()}`,
+      description: `${prediction.timeframeMonths}-month forecast with ${prediction.riskLevel} risk.`,
+      params: { prediction },
+    });
+  };
+
   // Login handler -> direct to Home / Dashboard
   const handleLoginSuccess = async (userData) => {
     if (userData?.name) {
@@ -138,6 +172,7 @@ export default function App() {
       setSubscriptionTier(null);
     }
     await refreshMembership();
+    await loadPredictionHistory();
     setIsAuthenticated(true);
     setIsOnboarding(false);
     setActiveTab('home');
@@ -157,6 +192,7 @@ export default function App() {
       setSubscriptionTier(null);
     }
     await refreshMembership();
+    await loadPredictionHistory();
     setIsAuthenticated(true);
     setIsOnboarding(true);
     setActiveTab('membership');
@@ -185,6 +221,7 @@ export default function App() {
     clearSession();
     setIsAuthenticated(false);
     setSubscriptionTier(null);
+    setLatestPrediction(null);
     setMembershipInfo((prev) => ({ ...prev, role: 'The Owner', validDays: 0, totalDays: 0, expiryDate: 'No active membership' }));
     setIsOnboarding(false);
     setActiveTab('home');
@@ -213,6 +250,7 @@ export default function App() {
           cutExpense: params.cutExpense !== undefined ? params.cutExpense : 80,
           injectCapital: params.injectCapital !== undefined ? params.injectCapital : '20.000.000',
           freezeHiring: params.freezeHiring !== undefined ? params.freezeHiring : true,
+          prediction: params.prediction,
         });
       } else {
         setPredictionParams({
@@ -220,6 +258,7 @@ export default function App() {
           cutExpense: 20,
           injectCapital: '10.000',
           freezeHiring: true,
+          prediction: null,
         });
       }
     } else if (tabKey === 'estatement') {
@@ -272,6 +311,8 @@ export default function App() {
             initialInjectCapital={predictionParams.injectCapital}
             initialFreezeHiring={predictionParams.freezeHiring}
             onLogCreated={handleAddLog}
+            onPredictionCreated={handlePredictionCreated}
+            initialPrediction={predictionParams.prediction}
           />
         );
       case 'estatement':
@@ -316,12 +357,16 @@ export default function App() {
             logs={activityLogs}
             onSelectLog={(log) => {
               if (log.type === 'prediction') {
+                if (log.params?.prediction) {
+                  setLatestPrediction(log.params.prediction);
+                }
                 handleTabPress('prediction', {
                   step: 'results',
                   cutExpense: log.params?.cutExpense ?? 20,
                   injectCapital: log.params?.injectCapital ?? '10.000',
                   freezeHiring: log.params?.freezeHiring ?? true,
                   simulatedDays: log.params?.simulatedDays ?? 162,
+                  prediction: log.params?.prediction,
                 });
               } else if (log.type === 'estatement') {
                 handleTabPress('estatement', {
@@ -369,6 +414,7 @@ export default function App() {
             onTabPress={handleTabPress}
             userName={user.name}
             profileImageUri={profileImageUri}
+            cashAmount={latestPrediction ? Number(latestPrediction.predictedBalance || 0).toLocaleString() : undefined}
             onSimulateRunway={(params) => handleTabPress('prediction', params)}
           />
         );
