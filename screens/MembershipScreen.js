@@ -21,10 +21,27 @@ import {
   SparkleIcon,
 } from '../components';
 import {
+  buildMembershipSyncSnapshot,
   openSubscriptionManagement,
   purchaseTier,
   restoreRevenueCatPurchases,
 } from '../services/revenueCat';
+import { syncMembership } from '../services/api';
+
+// Pushes the just-purchased/restored entitlement to the backend right away so
+// GET /memberships/me reflects it without waiting on the async RevenueCat
+// webhook. Best-effort: failures here don't block the UI, since the SDK-side
+// entitlement (already verified above) already drives the badge.
+async function syncMembershipWithBackend(customerInfo) {
+  try {
+    const snapshot = buildMembershipSyncSnapshot(customerInfo);
+    if (snapshot) {
+      await syncMembership(snapshot);
+    }
+  } catch (error) {
+    console.warn('Membership sync with backend failed:', error.message);
+  }
+}
 
 const MEMBERSHIP_PLANS = [
   {
@@ -110,6 +127,9 @@ export default function MembershipScreen({
         role: plan.id === 'enterprise' ? 'The Enterprise' : 'The Business Owner',
       });
       setShowSuccessModal(true);
+      // Notify the backend immediately instead of relying solely on the
+      // async RevenueCat webhook (which can be delayed/misconfigured).
+      await syncMembershipWithBackend(result.customerInfo);
     } catch (error) {
       Alert.alert('Purchase Failed', error.message || 'RevenueCat could not complete the purchase.');
     } finally {
@@ -126,6 +146,9 @@ export default function MembershipScreen({
           plan: result.tier,
           role: result.tier === 'enterprise' ? 'The Enterprise' : 'The Business Owner',
         });
+        // Notify the backend immediately instead of relying solely on the
+        // async RevenueCat webhook (which can be delayed/misconfigured).
+        await syncMembershipWithBackend(result.customerInfo);
       }
       Alert.alert('Purchases Restored', result.tier ? `Your ${result.tier} access is active.` : 'No active subscription was found.');
     } catch (error) {

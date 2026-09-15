@@ -109,6 +109,17 @@ export async function linkRevenueCatUser(appUserId) {
   });
 }
 
+// Pushes a snapshot of the client's live RevenueCat entitlement to the
+// backend right after a purchase/restore, so the badge doesn't have to wait
+// on the async RevenueCat webhook. Response shape matches getMyMembership().
+export async function syncMembership(snapshot) {
+  const { payload } = await request('/memberships/sync', {
+    method: 'POST',
+    body: JSON.stringify(snapshot),
+  });
+  return payload?.data;
+}
+
 export async function createPrediction(input) {
   const { payload } = await request('/analytics/predict', {
     method: 'POST',

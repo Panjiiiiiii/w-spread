@@ -48,6 +48,36 @@ export function getSubscriptionTier(customerInfo) {
   return null;
 }
 
+// Builds the payload for POST /memberships/sync from the RevenueCat SDK's
+// live CustomerInfo, so the backend can fast-cache the active entitlement
+// instead of waiting on the async RevenueCat webhook. Returns null when no
+// entitlement is active (nothing to sync).
+export function buildMembershipSyncSnapshot(customerInfo) {
+  const tier = getSubscriptionTier(customerInfo);
+  if (!tier) return null;
+
+  const entitlementKey = tier === 'enterprise' ? ENTITLEMENTS.enterprise : ENTITLEMENTS.business;
+  const entitlement = customerInfo?.entitlements?.active?.[entitlementKey];
+  if (!entitlement) return null;
+
+  return {
+    appUserId: customerInfo?.originalAppUserId || null,
+    productIdentifier: entitlement.productIdentifier || null,
+    entitlementIdentifier: entitlementKey,
+    purchasedAtMs: entitlement.latestPurchaseDate
+      ? new Date(entitlement.latestPurchaseDate).getTime()
+      : null,
+    expiresAtMs: entitlement.expirationDate
+      ? new Date(entitlement.expirationDate).getTime()
+      : null,
+    willRenew: typeof entitlement.willRenew === 'boolean' ? entitlement.willRenew : null,
+    store: entitlement.store || null,
+    isSandbox: entitlement.isSandbox ?? null,
+    originalTransactionId: entitlement.originalPurchaseDate ? String(entitlement.originalPurchaseDate) : null,
+    transactionId: null,
+  };
+}
+
 function packageMatchesTier(packageItem, tier, billingCycle) {
   const configuredProductId = PRODUCT_IDS[`${tier}${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}`];
   if (configuredProductId) {

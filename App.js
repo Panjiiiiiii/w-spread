@@ -9,6 +9,7 @@ import {
   LogHistoryScreen,
   EditProfileScreen,
 } from './screens';
+import Purchases from 'react-native-purchases';
 import {
   clearSession,
   getMyMembership,
@@ -20,6 +21,11 @@ import {
   configureRevenueCat,
   getSubscriptionTier,
 } from './services/revenueCat';
+
+// Tier ranking used to decide whether the RevenueCat SDK's live entitlement
+// should win over whatever the backend reports (see refreshMembership below).
+const TIER_RANK = { enterprise: 2, business: 1 };
+const tierRank = (tier) => TIER_RANK[tier] || 0;
 
 export default function App() {
   // Authentication State
@@ -126,25 +132,62 @@ export default function App() {
     setActiveTab('membership');
   };
 
+  // RevenueCat's own CustomerInfo is the source of truth for what a user is
+  // currently entitled to on their device (see
+  // https://www.revenuecat.com/docs/getting-started/entitlements). The
+  // backend's /memberships/me is populated asynchronously by RevenueCat's
+  // webhook and can lag or be empty (misconfigured secret, delivery delay,
+  // webhook never fired in sandbox, etc). So: fetch both, and let a live SDK
+  // entitlement win over a null/lower tier from the backend. Only the
+  // backend's role/day-count metadata is used for display details.
   const refreshMembership = async (retries = 0) => {
+    let liveTier = null;
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      liveTier = getSubscriptionTier(customerInfo);
+    } catch (error) {
+      console.warn('Live RevenueCat entitlement check failed:', error.message);
+    }
+
     try {
       const membership = await getMyMembership();
-      if (!membership?.tier && retries > 0) {
+      const backendTier = membership?.tier || null;
+
+      if (!backendTier && !liveTier && retries > 0) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         return refreshMembership(retries - 1);
       }
-      setSubscriptionTier(membership?.tier || null);
-      setMembershipInfo((prev) => ({
-        ...prev,
-        role: membership?.role || 'The Owner',
-        validDays: membership?.validDays || 0,
-        totalDays: membership?.totalDays || 0,
-        expiryDate: membership?.expiresAt
-          ? new Date(membership.expiresAt).toLocaleDateString()
-          : 'No active membership',
-      }));
+
+      // Live RevenueCat entitlement wins over a null/lower backend tier.
+      const resolvedTier = tierRank(liveTier) > tierRank(backendTier) ? liveTier : backendTier;
+      setSubscriptionTier(resolvedTier || null);
+
+      setMembershipInfo((prev) => {
+        if (resolvedTier && resolvedTier !== backendTier) {
+          // Backend hasn't caught up yet (webhook/sync still pending) —
+          // keep an optimistic role for the tier we already know is active
+          // instead of wiping it out with the backend's stale/empty data.
+          return {
+            ...prev,
+            role: resolvedTier === 'enterprise' ? 'The Enterprise' : 'The Business Owner',
+          };
+        }
+        return {
+          ...prev,
+          role: membership?.role || 'The Owner',
+          validDays: membership?.validDays || 0,
+          totalDays: membership?.totalDays || 0,
+          expiryDate: membership?.expiresAt
+            ? new Date(membership.expiresAt).toLocaleDateString()
+            : 'No active membership',
+        };
+      });
     } catch (error) {
       console.warn('Membership refresh failed:', error.message);
+      // Backend call failed entirely — still trust a live entitlement if we have one.
+      if (liveTier) {
+        setSubscriptionTier((prev) => (tierRank(liveTier) > tierRank(prev) ? liveTier : prev));
+      }
     }
   };
 
