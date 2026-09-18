@@ -120,6 +120,58 @@ export async function syncMembership(snapshot) {
   return payload?.data;
 }
 
+// Uploads a PDF e-statement for OCR/parsing. Uses XMLHttpRequest instead of
+// fetch (which request() is built on) because fetch does not expose upload
+// progress events; onProgress receives a 0-100 integer as the multipart body
+// streams to the server.
+export async function uploadStatement(fileAsset, onProgress) {
+  const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
+  const authorization = formatAuthorizationHeader(token);
+
+  const formData = new FormData();
+  formData.append('file', {
+    uri: fileAsset.uri,
+    name: fileAsset.name || 'statement.pdf',
+    type: fileAsset.mimeType || 'application/pdf',
+  });
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE_URL}/analytics/upload-statement`);
+    xhr.setRequestHeader('Accept', 'application/json');
+    if (authorization) {
+      xhr.setRequestHeader('Authorization', authorization);
+    }
+
+    if (xhr.upload && typeof onProgress === 'function') {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          onProgress(Math.round((event.loaded / event.total) * 100));
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      let payload = null;
+      try {
+        payload = JSON.parse(xhr.responseText);
+      } catch (parseError) {
+        // fall through with payload = null
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && payload?.success !== false) {
+        resolve(payload?.data);
+      } else {
+        reject(new Error(payload?.message || `Upload failed with status ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error while uploading the statement.'));
+    xhr.ontimeout = () => reject(new Error('Uploading the statement timed out.'));
+
+    xhr.send(formData);
+  });
+}
+
 export async function createPrediction(input) {
   const { payload } = await request('/analytics/predict', {
     method: 'POST',

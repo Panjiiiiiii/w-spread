@@ -12,6 +12,7 @@ import {
 import Purchases from 'react-native-purchases';
 import {
   clearSession,
+  createPrediction,
   getMyMembership,
   getPredictionHistory,
   linkRevenueCatUser,
@@ -55,6 +56,8 @@ export default function App() {
     cutExpense: 20,
     injectCapital: '10.000',
     freezeHiring: true,
+    averageMonthlyRevenue: null,
+    averageMonthlyExpenses: null,
   });
 
   // E-Statement Parameters
@@ -88,6 +91,26 @@ export default function App() {
   const handlePredictionCreated = async (prediction) => {
     setLatestPrediction(prediction);
     await loadPredictionHistory();
+  };
+
+  // Called right after EStatementScreen successfully parses a PDF upload.
+  // The parsed transactions are already persisted server-side (feeding the
+  // same `Transaction` table the prediction engine reads), so triggering a
+  // fresh prediction here immediately reflects the new statement data in the
+  // Home screen's balance breakdown and the Prediction engine's baseline,
+  // without waiting for the user to manually revisit either screen.
+  const handleStatementProcessed = async (statementResult) => {
+    setPredictionParams((prev) => ({
+      ...prev,
+      averageMonthlyRevenue: statementResult?.monthlyAvgRevenue ?? prev.averageMonthlyRevenue,
+      averageMonthlyExpenses: statementResult?.monthlyAvgExpense ?? prev.averageMonthlyExpenses,
+    }));
+    try {
+      const prediction = await createPrediction({ timeframeMonths: 12, payrollImpact: 0, vendorImpact: 0 });
+      await handlePredictionCreated(prediction);
+    } catch (error) {
+      console.warn('Auto-prediction after statement upload failed:', error.message);
+    }
   };
 
   // Login handler -> direct to Home / Dashboard
@@ -222,21 +245,35 @@ export default function App() {
         return;
       }
       if (params && params.step) {
-        setPredictionParams({
+        setPredictionParams((prev) => ({
           step: params.step,
           cutExpense: params.cutExpense !== undefined ? params.cutExpense : 80,
           injectCapital: params.injectCapital !== undefined ? params.injectCapital : '20.000.000',
           freezeHiring: params.freezeHiring !== undefined ? params.freezeHiring : true,
           prediction: params.prediction,
-        });
+          averageMonthlyRevenue: params.averageMonthlyRevenue ?? prev.averageMonthlyRevenue,
+          averageMonthlyExpenses: params.averageMonthlyExpenses ?? prev.averageMonthlyExpenses,
+        }));
+      } else if (params?.fromStatement) {
+        // Navigated from EStatementScreen's "Simulate What-if Now" — keep the
+        // statement-derived averages already stashed in predictionParams,
+        // just reset the step to the simulation form.
+        setPredictionParams((prev) => ({
+          ...prev,
+          step: 'simulation',
+          averageMonthlyRevenue: params.averageMonthlyRevenue ?? prev.averageMonthlyRevenue,
+          averageMonthlyExpenses: params.averageMonthlyExpenses ?? prev.averageMonthlyExpenses,
+        }));
       } else {
-        setPredictionParams({
+        setPredictionParams((prev) => ({
           step: 'simulation',
           cutExpense: 20,
           injectCapital: '10.000',
           freezeHiring: true,
           prediction: null,
-        });
+          averageMonthlyRevenue: prev.averageMonthlyRevenue,
+          averageMonthlyExpenses: prev.averageMonthlyExpenses,
+        }));
       }
     } else if (tabKey === 'estatement') {
       if (params && params.step) {
@@ -290,6 +327,8 @@ export default function App() {
             initialFreezeHiring={predictionParams.freezeHiring}
             onPredictionCreated={handlePredictionCreated}
             initialPrediction={predictionParams.prediction}
+            initialAverageMonthlyRevenue={predictionParams.averageMonthlyRevenue}
+            initialAverageMonthlyExpenses={predictionParams.averageMonthlyExpenses}
           />
         );
       case 'estatement':
@@ -300,6 +339,7 @@ export default function App() {
             onTabPress={handleTabPress}
             initialStep={estatementParams.step}
             initialFileName={estatementParams.fileName}
+            onStatementProcessed={handleStatementProcessed}
           />
         );
       case 'membership':

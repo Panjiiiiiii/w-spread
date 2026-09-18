@@ -19,27 +19,9 @@ import {
   CheckCircleIcon,
   CircularProgress,
 } from '../components';
+import { uploadStatement } from '../services/api';
 
-const EXPENSE_CATEGORIES = [
-  {
-    key: 'operations',
-    name: 'Operations & Payroll',
-    amount: '$ 60.000',
-    percentage: 50,
-  },
-  {
-    key: 'marketing',
-    name: 'Marketing & Ads',
-    amount: '$ 40.000',
-    percentage: 30,
-  },
-  {
-    key: 'software',
-    name: 'Software & Utilities',
-    amount: '$ 20.000',
-    percentage: 20,
-  },
-];
+const MAX_STATEMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB, matches dropzone copy + backend limit
 
 export default function EStatementScreen({
   activeTab = 'estatement',
@@ -47,11 +29,14 @@ export default function EStatementScreen({
   onBack,
   initialStep = 'upload',
   initialFileName,
+  onStatementProcessed,
 }) {
   // 'upload' or 'results' step
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [statementResult, setStatementResult] = useState(null);
 
   useEffect(() => {
     if (initialStep) setCurrentStep(initialStep);
@@ -60,13 +45,20 @@ export default function EStatementScreen({
   const handlePickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/vnd.ms-excel', 'text/csv'],
+        // Backend only accepts PDF (multer fileFilter rejects other mime types),
+        // so restrict the picker to PDF to avoid a round-trip failure.
+        type: 'application/pdf',
         copyToCacheDirectory: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
+        if (file.size && file.size > MAX_STATEMENT_SIZE_BYTES) {
+          Alert.alert('File Too Large', 'Please select a PDF statement smaller than 10 MB.');
+          return;
+        }
         setSelectedFile(file);
+        setStatementResult(null);
       }
     } catch (err) {
       console.log('Error picking document:', err);
@@ -74,13 +66,25 @@ export default function EStatementScreen({
     }
   };
 
-  const handleProcessStatement = () => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      setCurrentStep('results');
+  const handleProcessStatement = async () => {
+    if (!selectedFile) {
+      Alert.alert('No File Selected', 'Please choose a PDF e-statement first.');
+      return;
+    }
 
-    }, 1000);
+    setIsProcessing(true);
+    setUploadProgress(0);
+    try {
+      const result = await uploadStatement(selectedFile, setUploadProgress);
+      setStatementResult(result);
+      setCurrentStep('results');
+      onStatementProcessed?.(result);
+    } catch (error) {
+      const message = error?.message || 'Unable to process the statement. Please try again.';
+      Alert.alert('Processing Failed', message);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
 
@@ -90,6 +94,27 @@ export default function EStatementScreen({
     if (mb >= 1) return `${mb.toFixed(1)} MB`;
     const kb = bytes / 1024;
     return `${kb.toFixed(0)} KB`;
+  };
+
+  const formatCurrency = (value) => {
+    const amount = Number(value || 0);
+    return `$${Math.round(amount).toLocaleString('en-US')}`;
+  };
+
+  const formatDateShort = (isoDate) => {
+    if (!isoDate) return '';
+    const date = new Date(isoDate);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const formatPeriodLabel = (result) => {
+    if (!result) return '';
+    const start = formatDateShort(result.periodStart);
+    const end = formatDateShort(result.periodEnd);
+    const count = result.transactionCount ?? 0;
+    if (!start || !end) return `${count} Transaction${count === 1 ? '' : 's'}`;
+    return `Period : ${start} - ${end} - ${count} Transaction${count === 1 ? '' : 's'}`;
   };
 
   const handleBackPress = () => {
@@ -182,6 +207,16 @@ export default function EStatementScreen({
                 )}
               </TouchableOpacity>
 
+              {/* Upload Progress Indicator */}
+              {isProcessing ? (
+                <View style={styles.progressWrapper}>
+                  <CircularProgress percentage={uploadProgress} size={72} strokeWidth={7} />
+                  <Text style={styles.progressLabel}>
+                    {uploadProgress < 100 ? 'Uploading…' : 'Parsing statement…'}
+                  </Text>
+                </View>
+              ) : null}
+
               {/* Process Statement Button */}
               <View style={styles.buttonContainer}>
                 <Button
@@ -189,12 +224,14 @@ export default function EStatementScreen({
                   variant="primary"
                   fullWidth
                   loading={isProcessing}
+                  disabled={!selectedFile || isProcessing}
                   onPress={handleProcessStatement}
                 />
               </View>
             </>
           ) : (
-            /* STEP 2: STATEMENT RESULTS VIEW (Node 40:237) */
+            /* STEP 2: STATEMENT RESULTS VIEW (Node 40:237) — populated from the
+               real upload-statement response, no hardcoded figures. */
             <>
               {/* File Name Pill Badge */}
               <View style={styles.fileBadge}>
@@ -206,43 +243,50 @@ export default function EStatementScreen({
 
               {/* Period & Transaction Subtitle */}
               <Text style={styles.periodText}>
-                Period : 01 Jan 2026 - 28 Feb 2026 - 240 Transaction
+                {formatPeriodLabel(statementResult)}
               </Text>
 
-              {/* Metrics Row: Calculated Daily Burn & Detected Cash Balance */}
+              {/* Metrics Row: Monthly Avg Expense & Monthly Avg Revenue */}
               <View style={styles.metricsRow}>
-                {/* Calculated Daily Burn */}
+                {/* Monthly Average Expense (baseline for daily burn) */}
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricCardTitle}>Calculated Daily Burn</Text>
-                  <Text style={styles.metricCardValue}>$6.000</Text>
-                  <Text style={styles.metricCardSubtitle}>/day</Text>
+                  <Text style={styles.metricCardTitle}>Avg Monthly Expense</Text>
+                  <Text style={styles.metricCardValue}>
+                    {formatCurrency(statementResult?.monthlyAvgExpense)}
+                  </Text>
+                  <Text style={styles.metricCardSubtitle}>/month</Text>
                 </View>
 
-                {/* Detected Cash Balance */}
+                {/* Monthly Average Revenue */}
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricCardTitle}>Detected Cash Balance</Text>
-                  <Text style={styles.metricCardValue}>$15.000</Text>
-                  <Text style={styles.metricCardSubtitle}>Ending Balance</Text>
+                  <Text style={styles.metricCardTitle}>Avg Monthly Revenue</Text>
+                  <Text style={styles.metricCardValue}>
+                    {formatCurrency(statementResult?.monthlyAvgRevenue)}
+                  </Text>
+                  <Text style={styles.metricCardSubtitle}>/month</Text>
                 </View>
               </View>
 
               {/* Top Expense Categories Section */}
-              <Text style={styles.expenseSectionTitle}>Top Expense Categories</Text>
+              {statementResult?.topExpenseCategories?.length ? (
+                <>
+                  <Text style={styles.expenseSectionTitle}>Top Expense Categories</Text>
+                  <View style={styles.expenseCategoriesList}>
+                    {statementResult.topExpenseCategories.map((item) => (
+                      <View key={item.category} style={styles.categoryCard}>
+                        {/* Circular Progress Ring */}
+                        <CircularProgress percentage={item.percentage} size={60} strokeWidth={6} />
 
-              <View style={styles.expenseCategoriesList}>
-                {EXPENSE_CATEGORIES.map((item) => (
-                  <View key={item.key} style={styles.categoryCard}>
-                    {/* Circular Progress Ring */}
-                    <CircularProgress percentage={item.percentage} size={60} strokeWidth={6} />
-
-                    {/* Category Label & Amount */}
-                    <View style={styles.categoryInfo}>
-                      <Text style={styles.categoryName}>{item.name}</Text>
-                      <Text style={styles.categoryAmount}>{item.amount}</Text>
-                    </View>
+                        {/* Category Label & Amount */}
+                        <View style={styles.categoryInfo}>
+                          <Text style={styles.categoryName}>{item.category}</Text>
+                          <Text style={styles.categoryAmount}>{formatCurrency(item.amount)}</Text>
+                        </View>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
+                </>
+              ) : null}
 
               {/* Action Buttons */}
               <View style={styles.resultsButtonGroup}>
@@ -260,7 +304,11 @@ export default function EStatementScreen({
                   variant="outline"
                   fullWidth
                   style={styles.simulateWhatIfButton}
-                  onPress={() => onTabPress && onTabPress('prediction')}
+                  onPress={() => onTabPress && onTabPress('prediction', {
+                    fromStatement: true,
+                    averageMonthlyRevenue: statementResult?.monthlyAvgRevenue,
+                    averageMonthlyExpenses: statementResult?.monthlyAvgExpense,
+                  })}
                 />
               </View>
             </>
@@ -451,6 +499,23 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     maxWidth: 353,
+  },
+  progressWrapper: {
+    width: '100%',
+    maxWidth: 353,
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  progressLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1F6F5F',
+    fontFamily: Platform.select({
+      ios: 'System',
+      android: 'Roboto',
+      default: 'Poppins, sans-serif',
+    }),
   },
 
   // RESULTS VIEW STYLES
