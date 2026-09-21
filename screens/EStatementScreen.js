@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import { Asset } from 'expo-asset';
 import {
   Navbar,
   Button,
@@ -19,9 +20,15 @@ import {
   CheckCircleIcon,
   CircularProgress,
 } from '../components';
-import { uploadStatement } from '../services/api';
+import { getStatementUploadUsage, uploadStatement } from '../services/api';
 
 const MAX_STATEMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB, matches dropzone copy + backend limit
+
+// Bundled demo fixture (a real, synthetic BCA-format statement) so judges
+// and reviewers can test the full upload -> parse -> results flow without
+// needing to source their own bank PDF.
+const SAMPLE_STATEMENT_ASSET = require('../assets/sample-bca-statement.pdf');
+const SAMPLE_STATEMENT_NAME = 'sample-bca-statement.pdf';
 
 export default function EStatementScreen({
   activeTab = 'estatement',
@@ -37,10 +44,36 @@ export default function EStatementScreen({
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [statementResult, setStatementResult] = useState(null);
+  // Free-tier ("The Owner") upload allowance for the current calendar
+  // month, fetched from GET /statements/usage. null while loading; once
+  // loaded, `unlimited: true` for business/enterprise means no countdown is
+  // shown and the upload button is never disabled for this reason.
+  const [uploadUsage, setUploadUsage] = useState(null);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(true);
 
   useEffect(() => {
     if (initialStep) setCurrentStep(initialStep);
   }, [initialStep]);
+
+  const loadUploadUsage = async () => {
+    try {
+      const usage = await getStatementUploadUsage();
+      setUploadUsage(usage);
+    } catch (error) {
+      console.warn('Failed to load statement upload usage:', error.message);
+      setUploadUsage(null);
+    } finally {
+      setIsLoadingUsage(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUploadUsage();
+  }, []);
+
+  const hasReachedUploadLimit = Boolean(
+    uploadUsage && !uploadUsage.unlimited && uploadUsage.remaining !== null && uploadUsage.remaining <= 0
+  );
 
   const handlePickDocument = async () => {
     try {
@@ -66,9 +99,38 @@ export default function EStatementScreen({
     }
   };
 
+  // Loads the bundled demo statement fixture as if it were picked by the
+  // user, so judges/reviewers can test the full flow without a real bank
+  // PDF. Asset.fromModule + downloadAsync resolves the bundled require()
+  // into a real file:// URI on-device, matching the shape DocumentPicker
+  // normally returns (uri/name/mimeType/size).
+  const handleUseSampleStatement = async () => {
+    try {
+      const asset = Asset.fromModule(SAMPLE_STATEMENT_ASSET);
+      await asset.downloadAsync();
+      setSelectedFile({
+        uri: asset.localUri || asset.uri,
+        name: SAMPLE_STATEMENT_NAME,
+        mimeType: 'application/pdf',
+        size: null,
+      });
+      setStatementResult(null);
+    } catch (err) {
+      console.log('Error loading sample statement:', err);
+      Alert.alert('Error', 'Unable to load the sample statement. Please try again.');
+    }
+  };
+
   const handleProcessStatement = async () => {
     if (!selectedFile) {
       Alert.alert('No File Selected', 'Please choose a PDF e-statement first.');
+      return;
+    }
+    if (hasReachedUploadLimit) {
+      Alert.alert(
+        'Upload Limit Reached',
+        `You've used all ${uploadUsage.limit} free statement uploads this month. Upgrade to Business or Enterprise for unlimited uploads.`
+      );
       return;
     }
 
@@ -84,6 +146,9 @@ export default function EStatementScreen({
       Alert.alert('Processing Failed', message);
     } finally {
       setIsProcessing(false);
+      // Every attempt (success or failure) counts against the monthly
+      // limit server-side, so refresh the countdown regardless of outcome.
+      loadUploadUsage();
     }
   };
 
@@ -171,13 +236,36 @@ export default function EStatementScreen({
                 </Text>
               </View>
 
+              {/* Upload Tries Countdown (free tier only; hidden for unlimited plans) */}
+              {!isLoadingUsage && uploadUsage && !uploadUsage.unlimited ? (
+                <View
+                  style={[
+                    styles.usageBadge,
+                    hasReachedUploadLimit && styles.usageBadgeExhausted,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.usageBadgeText,
+                      hasReachedUploadLimit && styles.usageBadgeTextExhausted,
+                    ]}
+                  >
+                    {hasReachedUploadLimit
+                      ? `You've used all ${uploadUsage.limit} free uploads this month`
+                      : `${uploadUsage.remaining} of ${uploadUsage.limit} free uploads left this month`}
+                  </Text>
+                </View>
+              ) : null}
+
               {/* File Input Box (Dropzone) */}
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={handlePickDocument}
+                disabled={hasReachedUploadLimit}
                 style={[
                   styles.dropzoneBox,
                   selectedFile && styles.dropzoneBoxActive,
+                  hasReachedUploadLimit && styles.dropzoneBoxDisabled,
                 ]}
               >
                 {selectedFile ? (
@@ -207,6 +295,17 @@ export default function EStatementScreen({
                 )}
               </TouchableOpacity>
 
+              {/* Sample Statement Button (for judges/reviewers without a real bank PDF) */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handleUseSampleStatement}
+                disabled={hasReachedUploadLimit}
+                style={[styles.sampleButton, hasReachedUploadLimit && styles.sampleButtonDisabled]}
+              >
+                <DocumentOutlineIcon size={16} color="#1F6F5F" />
+                <Text style={styles.sampleButtonText}>Use Sample Statement (Demo)</Text>
+              </TouchableOpacity>
+
               {/* Upload Progress Indicator */}
               {isProcessing ? (
                 <View style={styles.progressWrapper}>
@@ -220,11 +319,11 @@ export default function EStatementScreen({
               {/* Process Statement Button */}
               <View style={styles.buttonContainer}>
                 <Button
-                  title="Process Statement"
+                  title={hasReachedUploadLimit ? 'Upload Limit Reached' : 'Process Statement'}
                   variant="primary"
                   fullWidth
                   loading={isProcessing}
-                  disabled={!selectedFile || isProcessing}
+                  disabled={!selectedFile || isProcessing || hasReachedUploadLimit}
                   onPress={handleProcessStatement}
                 />
               </View>
@@ -436,6 +535,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FAF5',
     borderColor: '#1F6F5F',
   },
+  dropzoneBoxDisabled: {
+    opacity: 0.5,
+  },
+  usageBadge: {
+    width: '100%',
+    maxWidth: 353,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#6FCF97',
+    backgroundColor: '#E8F8F0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  usageBadgeExhausted: {
+    borderColor: '#FFD6D6',
+    backgroundColor: '#FFF5F5',
+  },
+  usageBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1F6F5F',
+    textAlign: 'center',
+    fontFamily: Platform.select({
+      ios: 'System',
+      android: 'Roboto',
+      default: 'Poppins, sans-serif',
+    }),
+  },
+  usageBadgeTextExhausted: {
+    color: '#EB5757',
+  },
   dropzoneEmptyContent: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -499,6 +631,33 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     maxWidth: 353,
+  },
+  sampleButton: {
+    width: '100%',
+    maxWidth: 353,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#6FCF97',
+    backgroundColor: '#E8F8F0',
+    marginBottom: 16,
+  },
+  sampleButtonDisabled: {
+    opacity: 0.5,
+  },
+  sampleButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1F6F5F',
+    fontFamily: Platform.select({
+      ios: 'System',
+      android: 'Roboto',
+      default: 'Poppins, sans-serif',
+    }),
   },
   progressWrapper: {
     width: '100%',

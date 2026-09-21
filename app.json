@@ -14,7 +14,8 @@
           "photosPermission": "W-Spread uses your photos to update your profile image.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "ios": {
       "supportsTablet": true

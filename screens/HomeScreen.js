@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -27,6 +27,8 @@ export default function HomeScreen({
   profileImageUri,
   streakCount = 12,
   runwayDays = 142,
+  runwayStatusText = 'Safe zone (> 90 Days)',
+  runwayStatusType = 'safe',
   cashAmount = '15.000',
   onQuickSimulation,
   onUploadEStatement,
@@ -35,7 +37,15 @@ export default function HomeScreen({
   const [internalTab, setInternalTab] = useState('home');
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalTab;
   const [isModalVisible, setIsModalVisible] = useState(false);
+  // Mirrors the live runwayDays prop (server-derived) unless a "Quick
+  // Simulation" scenario has been applied — that scenario is a local,
+  // client-only what-if preview and intentionally overrides the display
+  // until the next real prediction/statement upload comes in.
   const [currentRunway, setCurrentRunway] = useState(runwayDays);
+
+  useEffect(() => {
+    setCurrentRunway(runwayDays);
+  }, [runwayDays]);
 
   const handleTabPress = (tabKey, params) => {
     if (onTabPress) {
@@ -116,8 +126,8 @@ export default function HomeScreen({
             <HeroRunwayCard
               days={currentRunway}
               title="Days Of Runway"
-              statusText="Safe zone (> 90 Days)"
-              statusType="safe"
+              statusText={runwayStatusText}
+              statusType={runwayStatusType}
               onPress={handleQuickSimulation}
             />
           </View>

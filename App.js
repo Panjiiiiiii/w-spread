@@ -94,6 +94,26 @@ export default function App() {
     await loadPredictionHistory();
   };
 
+  // Derives "days of runway" from the latest server prediction so the Home
+  // screen's Hero Runway Card reflects real data instead of a static
+  // placeholder. Runway = current balance / average daily burn, where daily
+  // burn is the shortfall between average monthly expenses and revenue.
+  const getRunwayFromPrediction = (prediction) => {
+    if (!prediction) return null;
+    const currentBalance = Number(prediction.currentBalance || 0);
+    const monthlyBurn = Math.max(
+      0,
+      Number(prediction.averageMonthlyExpenses || 0) - Number(prediction.averageMonthlyRevenue || 0)
+    );
+    if (monthlyBurn <= 0) return { days: 999, statusText: 'Safe zone (profitable)', statusType: 'safe' };
+
+    const dailyBurn = monthlyBurn / 30.4375;
+    const days = Math.max(0, Math.round(currentBalance / dailyBurn));
+    if (days < 30) return { days, statusText: `Danger zone (< 30 Days)`, statusType: 'danger' };
+    if (days < 90) return { days, statusText: `Caution zone (< 90 Days)`, statusType: 'warning' };
+    return { days, statusText: 'Safe zone (> 90 Days)', statusType: 'safe' };
+  };
+
   // Called right after EStatementScreen successfully parses a PDF upload.
   // The parsed transactions are already persisted server-side (feeding the
   // same `Transaction` table the prediction engine reads), so triggering a
@@ -431,7 +451,22 @@ export default function App() {
             onSave={handleSaveProfileImage}
           />
         );
-      case 'home':
+      case 'home': {
+        const runway = getRunwayFromPrediction(latestPrediction);
+        return (
+          <HomeScreen
+            activeTab={activeTab}
+            onTabPress={handleTabPress}
+            userName={user.name}
+            profileImageUri={profileImageUri}
+            cashAmount={latestPrediction ? Number(latestPrediction.predictedBalance || 0).toLocaleString() : undefined}
+            runwayDays={runway ? runway.days : undefined}
+            runwayStatusText={runway ? runway.statusText : undefined}
+            runwayStatusType={runway ? runway.statusType : undefined}
+            onSimulateRunway={(params) => handleTabPress('prediction', params)}
+          />
+        );
+      }
       default:
         return (
           <HomeScreen

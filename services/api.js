@@ -183,6 +183,14 @@ export async function getStatementHistory(page = 1, limit = 20) {
   };
 }
 
+// Current calendar-month statement upload usage vs the free-tier limit
+// (unlimited for business/enterprise). Used to render the "X of 20 tries"
+// countdown and disable the upload button once exhausted.
+export async function getStatementUploadUsage() {
+  const { payload } = await request('/statements/usage');
+  return payload?.data;
+}
+
 export async function getStatementDetail(id) {
   const { payload } = await request(`/statements/${id}`);
   return payload?.data;
