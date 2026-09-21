@@ -371,27 +371,6 @@ export default function PredictionScreen({
                 </View>
               </View>
 
-              {/* Recommendations Card with Star Accents */}
-              <View style={styles.recommendationsContainer}>
-                {/* Top-Left Sparkle Accent */}
-                <View style={styles.starTopLeft}>
-                  <SparkleIcon size={20} color="#1F6F5F" />
-                </View>
-
-                {/* Card Content */}
-                <View style={styles.recommendationsCard}>
-                  <Text style={styles.recommendationsTitle}>Recommendations</Text>
-                  <Text style={styles.recommendationsBody}>
-                    Based on your adjusted burn rate and expense cuts, your runway is extended into a healthy safe zone. We recommend keeping non-essential hiring frozen for at least 60 days.
-                  </Text>
-                </View>
-
-                {/* Bottom-Right Sparkle Accent */}
-                <View style={styles.starBottomRight}>
-                  <SparkleIcon size={20} color="#1F6F5F" />
-                </View>
-              </View>
-
               {/* Action Button: Go to Dashboard */}
               <View style={styles.resultsButtonContainer}>
                 <Button
