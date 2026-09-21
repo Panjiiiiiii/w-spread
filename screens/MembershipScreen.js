@@ -55,7 +55,6 @@ const MEMBERSHIP_PLANS = [
     features: [
       'Unlock unlimited what-if prediction',
       '20 tries for upload statement',
-      'Limited AI recommendations',
       'Pemisah Kas Pribadi vs Bisnis',
       'Simulator Dampak Payroll & Vendor',
     ],
@@ -73,7 +72,6 @@ const MEMBERSHIP_PLANS = [
     description: 'Unstructured DSS: Predictive Cashflow Analytics, Modul Valuasi, Akses API & Audit Log.',
     features: [
       'Unlock all features',
-      'Unlimited AI recommendations',
       'Unlimited upload statement',
       'Predictive Cashflow Analytics & Valuasi',
       'Konsolidasi Multi-Akun / Entitas',

@@ -7,7 +7,6 @@ import {
   ProfileScreen,
   MembershipScreen,
   LogHistoryScreen,
-  StatementHistoryScreen,
   EditProfileScreen,
 } from './screens';
 import Purchases from 'react-native-purchases';
@@ -76,7 +75,7 @@ export default function App() {
       const logs = predictions.map((prediction) => ({
         id: prediction.id,
         type: 'prediction',
-        title: `Projected Balance: $${Number(prediction.predictedBalance || 0).toLocaleString()}`,
+        title: `Projected Balance: Rp${Number(prediction.predictedBalance || 0).toLocaleString('id-ID')}`,
         description: `${prediction.timeframeMonths}-month forecast with ${prediction.riskLevel} risk.`,
         timestamp: new Date(prediction.createdAt).toLocaleString(),
         params: { prediction },
@@ -430,17 +429,8 @@ export default function App() {
               setActiveTab('membership');
             }}
             onViewLogs={() => setActiveTab('logs')}
-            onViewStatementHistory={() => setActiveTab('statement-history')}
             onEditProfile={() => setActiveTab('edit-profile')}
             onLogOut={handleLogOut}
-          />
-        );
-      case 'statement-history':
-        return (
-          <StatementHistoryScreen
-            activeTab="profile"
-            onTabPress={handleTabPress}
-            onBack={() => setActiveTab('profile')}
           />
         );
       case 'edit-profile':
@@ -459,7 +449,7 @@ export default function App() {
             onTabPress={handleTabPress}
             userName={user.name}
             profileImageUri={profileImageUri}
-            cashAmount={latestPrediction ? Number(latestPrediction.predictedBalance || 0).toLocaleString() : undefined}
+            cashAmount={latestPrediction ? Number(latestPrediction.predictedBalance || 0).toLocaleString('id-ID') : undefined}
             runwayDays={runway ? runway.days : undefined}
             runwayStatusText={runway ? runway.statusText : undefined}
             runwayStatusType={runway ? runway.statusType : undefined}
@@ -474,7 +464,7 @@ export default function App() {
             onTabPress={handleTabPress}
             userName={user.name}
             profileImageUri={profileImageUri}
-            cashAmount={latestPrediction ? Number(latestPrediction.predictedBalance || 0).toLocaleString() : undefined}
+            cashAmount={latestPrediction ? Number(latestPrediction.predictedBalance || 0).toLocaleString('id-ID') : undefined}
             onSimulateRunway={(params) => handleTabPress('prediction', params)}
           />
         );

@@ -137,7 +137,7 @@ export default function HomeScreen({
             <CashCard
               title="Cash Available"
               amount={cashAmount}
-              currency="$"
+              currency="Rp"
               onPress={() => console.log('Cash card tapped')}
             />
           </View>

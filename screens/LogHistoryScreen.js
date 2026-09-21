@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,6 +8,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  Alert,
+  ActivityIndicator,
+  Linking,
+  RefreshControl,
 } from 'react-native';
 import {
   Navbar,
@@ -15,7 +19,42 @@ import {
   TrendingUpIcon,
   ChevronRightIcon,
   HistoryIcon,
+  DocumentOutlineIcon,
+  CheckCircleIcon,
 } from '../components';
+import { getStatementFileUrl, getStatementHistory } from '../services/api';
+
+const STATEMENT_STATUS_META = {
+  SUCCESS: { label: 'Success', color: '#1F6F5F', bg: '#E8F8F0', border: '#6FCF97' },
+  FAILED: { label: 'Failed', color: '#EB5757', bg: '#FFF5F5', border: '#FFD6D6' },
+  PROCESSING: { label: 'Processing', color: '#B58900', bg: '#FFF8E6', border: '#F0DDA6' },
+};
+
+function formatBank(bank) {
+  if (!bank || bank === 'UNKNOWN') return 'Unrecognized Bank';
+  return bank;
+}
+
+// Normalizes a raw /statements history item into the same log shape used
+// for prediction entries, so both types can render through one list with
+// one set of filter pills.
+function toStatementLog(item) {
+  return {
+    id: `statement-${item.id}`,
+    type: 'estatement',
+    statementId: item.id,
+    status: item.status,
+    title: item.fileName,
+    timestamp: new Date(item.createdAt).toLocaleString(),
+    params: {
+      fileName: item.fileName,
+      bank: item.bank,
+      transactionCount: item.transactionCount,
+      errorMessage: item.errorMessage,
+      status: item.status,
+    },
+  };
+}
 
 export default function LogHistoryScreen({
   activeTab = 'profile',
@@ -24,32 +63,81 @@ export default function LogHistoryScreen({
   logs = [],
   onSelectLog,
 }) {
-  const [selectedFilter, setSelectedFilter] = useState('all'); // 'all' | 'prediction'
+  const [selectedFilter, setSelectedFilter] = useState('all'); // 'all' | 'prediction' | 'estatement'
+  const [statementLogs, setStatementLogs] = useState([]);
+  const [isLoadingStatements, setIsLoadingStatements] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [statementError, setStatementError] = useState(null);
+  const [openingId, setOpeningId] = useState(null);
 
-  const filteredLogs = logs.filter((log) => {
-    if (selectedFilter === 'prediction') return log.type === 'prediction';
-    return true;
+  const loadStatementHistory = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setIsLoadingStatements(true);
+    try {
+      const result = await getStatementHistory(1, 50);
+      setStatementLogs(result.items.map(toStatementLog));
+      setStatementError(null);
+    } catch (err) {
+      setStatementError(err.message || 'Unable to load your statement upload history.');
+    } finally {
+      setIsLoadingStatements(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStatementHistory();
+  }, [loadStatementHistory]);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadStatementHistory({ silent: true });
+  };
+
+  // Merge prediction logs (passed down from App.js) with statement upload
+  // logs (fetched here), newest first, so "Activity & History Logs" is one
+  // unified timeline instead of two separate screens.
+  const combinedLogs = useMemo(() => {
+    const merged = [...logs, ...statementLogs];
+    return merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [logs, statementLogs]);
+
+  const filteredLogs = combinedLogs.filter((log) => {
+    if (selectedFilter === 'all') return true;
+    return log.type === selectedFilter;
   });
 
-  const predictionCount = logs.filter((l) => l.type === 'prediction').length;
+  const predictionCount = combinedLogs.filter((l) => l.type === 'prediction').length;
+  const estatementCount = combinedLogs.filter((l) => l.type === 'estatement').length;
+
+  const handleOpenStatementFile = async (log) => {
+    if (log.status !== 'SUCCESS') return;
+    setOpeningId(log.id);
+    try {
+      const url = await getStatementFileUrl(log.statementId);
+      if (!url) throw new Error('No file is available for this statement.');
+      await Linking.openURL(url);
+    } catch (err) {
+      Alert.alert('Unable to Open File', err.message || 'Could not open the original statement.');
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
   const handleLogItemPress = (log) => {
+    if (log.type === 'estatement') {
+      handleOpenStatementFile(log);
+      return;
+    }
     if (onSelectLog) {
       onSelectLog(log);
     } else if (onTabPress) {
-      if (log.type === 'prediction') {
-        onTabPress('prediction', {
-          step: 'results',
-          cutExpense: log.params?.cutExpense ?? 20,
-          injectCapital: log.params?.injectCapital ?? '10.000',
-          freezeHiring: log.params?.freezeHiring ?? true,
-          simulatedDays: log.params?.simulatedDays ?? 162,
-        });
-      } else if (log.type === 'estatement') {
-        onTabPress('estatement', {
-          step: 'results',
-          fileName: log.params?.fileName || 'BCA_Statement_JanFeb2026.pdf',
-        });
-      }
+      onTabPress('prediction', {
+        step: 'results',
+        cutExpense: log.params?.cutExpense ?? 20,
+        injectCapital: log.params?.injectCapital ?? '10.000',
+        freezeHiring: log.params?.freezeHiring ?? true,
+        simulatedDays: log.params?.simulatedDays ?? 162,
+      });
     }
   };
 
@@ -66,6 +154,9 @@ export default function LogHistoryScreen({
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#1F6F5F" />
+          }
         >
           {/* Header Row: Back Button + Screen Title + Clear Button */}
           <View style={styles.headerRow}>
@@ -86,7 +177,7 @@ export default function LogHistoryScreen({
           {/* Subtitle / Description */}
           <View style={styles.headlineSection}>
             <Text style={styles.mainSubtitle}>
-              Review prediction history saved to your account. Tap any entry to view its analytics.
+              Review prediction runs and e-statement uploads saved to your account, including failed uploads. Tap any entry to view details.
             </Text>
           </View>
 
@@ -106,7 +197,7 @@ export default function LogHistoryScreen({
                   selectedFilter === 'all' && styles.filterPillTextActive,
                 ]}
               >
-                All ({logs.length})
+                All ({combinedLogs.length})
               </Text>
             </TouchableOpacity>
 
@@ -132,29 +223,67 @@ export default function LogHistoryScreen({
               </Text>
             </TouchableOpacity>
 
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setSelectedFilter('estatement')}
+              style={[
+                styles.filterPill,
+                selectedFilter === 'estatement' && styles.filterPillActive,
+              ]}
+            >
+              <DocumentOutlineIcon
+                size={14}
+                color={selectedFilter === 'estatement' ? '#FFFFFF' : '#1F6F5F'}
+              />
+              <Text
+                style={[
+                  styles.filterPillText,
+                  selectedFilter === 'estatement' && styles.filterPillTextActive,
+                ]}
+              >
+                E-Statement ({estatementCount})
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Log Entries List */}
-          {filteredLogs.length === 0 ? (
+          {isLoadingStatements && statementLogs.length === 0 ? (
+            <View style={styles.stateContainer}>
+              <ActivityIndicator size="large" color="#1F6F5F" />
+            </View>
+          ) : statementError && statementLogs.length === 0 && logs.length === 0 ? (
+            <View style={styles.stateContainer}>
+              <Text style={styles.errorText}>{statementError}</Text>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => loadStatementHistory()} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredLogs.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
                 <HistoryIcon size={32} color="#1F6F5F" />
               </View>
-              <Text style={styles.emptyTitle}>No Prediction History Found</Text>
+              <Text style={styles.emptyTitle}>No History Found</Text>
               <Text style={styles.emptySubtitle}>
-                Run a runway scenario simulation in Prediction to create your first log.
+                Run a runway scenario simulation or upload an e-statement to create your first log.
               </Text>
             </View>
           ) : (
             <View style={styles.logsList}>
               {filteredLogs.map((log) => {
                 const isPrediction = log.type === 'prediction';
+                const isEstatement = log.type === 'estatement';
+                const statementStatusMeta = isEstatement
+                  ? STATEMENT_STATUS_META[log.status] || STATEMENT_STATUS_META.PROCESSING
+                  : null;
+                const isTappable = !isEstatement || log.status === 'SUCCESS';
+                const isOpening = openingId === log.id;
 
                 return (
                   <TouchableOpacity
                     key={log.id}
-                    activeOpacity={0.85}
+                    activeOpacity={isTappable ? 0.85 : 1}
                     onPress={() => handleLogItemPress(log)}
+                    disabled={!isTappable || isOpening}
                     style={styles.logCard}
                   >
                     {/* Top Row: Type Badge + Timestamp */}
@@ -162,12 +291,16 @@ export default function LogHistoryScreen({
                       <View
                         style={[
                           styles.typeBadge,
-                          styles.predictionBadge,
+                          isPrediction ? styles.predictionBadge : styles.estatementBadge,
                         ]}
                       >
-                        <TrendingUpIcon size={12} color="#1F6F5F" />
+                        {isPrediction ? (
+                          <TrendingUpIcon size={12} color="#1F6F5F" />
+                        ) : (
+                          <DocumentOutlineIcon size={12} color="#1F6F5F" />
+                        )}
                         <Text style={styles.typeBadgeText}>
-                          Prediction Simulation
+                          {isPrediction ? 'Prediction Simulation' : 'E-Statement Upload'}
                         </Text>
                       </View>
 
@@ -180,6 +313,20 @@ export default function LogHistoryScreen({
                     {/* Description or Summary */}
                     {log.description ? (
                       <Text style={styles.logDescription}>{log.description}</Text>
+                    ) : null}
+
+                    {/* Status Badge for E-Statement Uploads */}
+                    {isEstatement ? (
+                      <View
+                        style={[
+                          styles.statementStatusBadge,
+                          { backgroundColor: statementStatusMeta.bg, borderColor: statementStatusMeta.border },
+                        ]}
+                      >
+                        <Text style={[styles.statementStatusText, { color: statementStatusMeta.color }]}>
+                          {statementStatusMeta.label}
+                        </Text>
+                      </View>
                     ) : null}
 
                     {/* Parameter / Metric Badges */}
@@ -206,33 +353,48 @@ export default function LogHistoryScreen({
                           </Text>
                         </View>
                       </View>
-                    ) : (
+                    ) : log.status === 'SUCCESS' ? (
                       <View style={styles.paramBadgesRow}>
                         <View style={styles.paramTag}>
-                          <Text style={styles.paramTagLabel}>File:</Text>
+                          <Text style={styles.paramTagLabel}>Bank:</Text>
                           <Text numberOfLines={1} style={styles.paramTagValue}>
-                            {log.params?.fileName || 'BCA_Statement.pdf'}
+                            {formatBank(log.params?.bank)}
                           </Text>
                         </View>
 
                         <View style={styles.paramTag}>
-                          <Text style={styles.paramTagLabel}>Total Analyzed:</Text>
+                          <Text style={styles.paramTagLabel}>Transactions:</Text>
                           <Text style={styles.paramTagValue}>
-                            {log.params?.totalAmount || '$ 120.000'}
+                            {log.params?.transactionCount ?? 0}
                           </Text>
                         </View>
                       </View>
-                    )}
+                    ) : log.status === 'FAILED' ? (
+                      <Text numberOfLines={2} style={styles.logErrorText}>
+                        {log.params?.errorMessage || 'This statement could not be processed.'}
+                      </Text>
+                    ) : null}
 
                     {/* Bottom Action Footer */}
-                    <View style={styles.logCardFooter}>
-                      <Text style={styles.redirectLinkText}>
-                        {isPrediction
-                          ? 'View Simulation Results'
-                          : 'View Statement Breakdown'}
-                      </Text>
-                      <ChevronRightIcon size={14} color="#1F6F5F" />
-                    </View>
+                    {isTappable ? (
+                      <View style={styles.logCardFooter}>
+                        {isOpening ? (
+                          <ActivityIndicator size="small" color="#1F6F5F" />
+                        ) : (
+                          <>
+                            <View style={styles.footerLeft}>
+                              {isEstatement ? <CheckCircleIcon size={14} color="#1F6F5F" /> : null}
+                              <Text style={styles.redirectLinkText}>
+                                {isPrediction
+                                  ? 'View Simulation Results'
+                                  : 'View Original PDF'}
+                              </Text>
+                            </View>
+                            <ChevronRightIcon size={14} color="#1F6F5F" />
+                          </>
+                        )}
+                      </View>
+                    ) : null}
                   </TouchableOpacity>
                 );
               })}
@@ -249,6 +411,12 @@ export default function LogHistoryScreen({
     </SafeAreaView>
   );
 }
+
+const fontFamily = Platform.select({
+  ios: 'System',
+  android: 'Roboto',
+  default: 'Poppins, sans-serif',
+});
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -288,19 +456,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1F6F5F',
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
-  },
-  clearButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFF0F0',
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontFamily,
   },
   headerPlaceholder: {
     width: 32,
@@ -315,16 +471,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#828282',
     lineHeight: 19,
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
   filterRow: {
     width: '100%',
     maxWidth: 353,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginBottom: 18,
   },
@@ -347,15 +500,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#1F6F5F',
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
   filterPillTextActive: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  stateContainer: {
+    width: '100%',
+    maxWidth: 353,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#EB5757',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontFamily,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#1F6F5F',
+  },
+  retryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily,
   },
   logsList: {
     width: '100%',
@@ -408,42 +583,46 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: '#1F6F5F',
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
   timestampText: {
     fontSize: 11,
     color: '#9E9E9E',
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
   logTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: '#1F6F5F',
     marginBottom: 4,
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
   logDescription: {
     fontSize: 12,
     color: '#666666',
     lineHeight: 17,
     marginBottom: 10,
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
+  },
+  statementStatusBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 8,
+  },
+  statementStatusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily,
+  },
+  logErrorText: {
+    fontSize: 12,
+    color: '#EB5757',
+    lineHeight: 17,
+    marginBottom: 4,
+    fontFamily,
   },
   paramBadgesRow: {
     flexDirection: 'row',
@@ -465,21 +644,13 @@ const styles = StyleSheet.create({
   paramTagLabel: {
     fontSize: 11,
     color: '#828282',
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
   paramTagValue: {
     fontSize: 11,
     fontWeight: '600',
     color: '#1F6F5F',
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
   logCardFooter: {
     flexDirection: 'row',
@@ -489,15 +660,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
   },
+  footerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   redirectLinkText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#1F6F5F',
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
   emptyContainer: {
     width: '100%',
@@ -525,21 +697,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1F6F5F',
     marginBottom: 6,
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
   emptySubtitle: {
     fontSize: 13,
     color: '#828282',
     textAlign: 'center',
     lineHeight: 19,
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
+    fontFamily,
   },
 });

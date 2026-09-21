@@ -18,7 +18,6 @@ import {
   ChevronRightIcon,
   LogOutIcon,
   HistoryIcon,
-  DocumentOutlineIcon,
 } from '../components';
 
 export default function ProfileScreen({
@@ -33,7 +32,6 @@ export default function ProfileScreen({
   expiryDate = '27 Aug 2027',
   onExtendMembership,
   onViewLogs,
-  onViewStatementHistory,
   onEditProfile,
   onLogOut,
 }) {
@@ -55,14 +53,6 @@ export default function ProfileScreen({
       onViewLogs();
     } else if (onTabPress) {
       onTabPress('logs');
-    }
-  };
-
-  const handleStatementHistoryPress = () => {
-    if (onViewStatementHistory) {
-      onViewStatementHistory();
-    } else if (onTabPress) {
-      onTabPress('statement-history');
     }
   };
 
@@ -194,22 +184,6 @@ export default function ProfileScreen({
             <View style={styles.extendButtonLeft}>
               <HistoryIcon size={18} color="#1F6F5F" />
               <Text style={styles.extendButtonText}>Activity & History Logs</Text>
-            </View>
-
-            {/* Right Part: Right Chevron */}
-            <ChevronRightIcon size={18} color="#1F6F5F" />
-          </TouchableOpacity>
-
-          {/* Statement Upload History Button */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleStatementHistoryPress}
-            style={styles.logMenuButton}
-          >
-            {/* Left Part: Document Icon + Label */}
-            <View style={styles.extendButtonLeft}>
-              <DocumentOutlineIcon size={18} color="#1F6F5F" />
-              <Text style={styles.extendButtonText}>Statement Upload History</Text>
             </View>
 
             {/* Right Part: Right Chevron */}

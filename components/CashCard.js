@@ -23,14 +23,14 @@ function formatAmount(value) {
  *
  * @param {string} title - Label above amount (Default: 'Cash Available')
  * @param {number|string} amount - Money amount (Default: '15.000')
- * @param {string} currency - Currency symbol or prefix (Default: '$')
+ * @param {string} currency - Currency symbol or prefix (Default: 'Rp')
  * @param {function} onPress - Optional tap handler
  * @param {object} style - Custom container style override
  */
 export default function CashCard({
   title = 'Cash Available',
   amount = '15.000',
-  currency = '$',
+  currency = 'Rp',
   onPress,
   style,
 }) {
