@@ -172,6 +172,30 @@ export async function uploadStatement(fileAsset, onProgress) {
   });
 }
 
+// Paginated upload history (newest first) for the current user, including
+// FAILED attempts. Does not include the file path or a signed URL — use
+// getStatementFileUrl(id) for that, scoped per item.
+export async function getStatementHistory(page = 1, limit = 20) {
+  const { payload } = await request(`/statements?page=${page}&limit=${limit}`);
+  return {
+    items: payload?.data || [],
+    meta: payload?.meta || { page, limit, total: 0, totalPages: 1 },
+  };
+}
+
+export async function getStatementDetail(id) {
+  const { payload } = await request(`/statements/${id}`);
+  return payload?.data;
+}
+
+// Requests a fresh, short-lived signed URL for the original uploaded PDF.
+// Callers should fetch this right before opening the file (e.g. via
+// Linking.openURL) rather than caching it, since it expires quickly.
+export async function getStatementFileUrl(id) {
+  const { payload } = await request(`/statements/${id}/file`);
+  return payload?.data?.url;
+}
+
 export async function createPrediction(input) {
   const { payload } = await request('/analytics/predict', {
     method: 'POST',

@@ -7,6 +7,7 @@ import {
   ProfileScreen,
   MembershipScreen,
   LogHistoryScreen,
+  StatementHistoryScreen,
   EditProfileScreen,
 } from './screens';
 import Purchases from 'react-native-purchases';
@@ -409,8 +410,17 @@ export default function App() {
               setActiveTab('membership');
             }}
             onViewLogs={() => setActiveTab('logs')}
+            onViewStatementHistory={() => setActiveTab('statement-history')}
             onEditProfile={() => setActiveTab('edit-profile')}
             onLogOut={handleLogOut}
+          />
+        );
+      case 'statement-history':
+        return (
+          <StatementHistoryScreen
+            activeTab="profile"
+            onTabPress={handleTabPress}
+            onBack={() => setActiveTab('profile')}
           />
         );
       case 'edit-profile':
