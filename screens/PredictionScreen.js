@@ -18,7 +18,6 @@ import {
   Button,
   CutExpenseSlider,
   ArrowLeftIcon,
-  SparkleIcon,
 } from '../components';
 import { createPrediction } from '../services/api';
 
@@ -627,52 +626,6 @@ const styles = StyleSheet.create({
       android: 'Roboto',
       default: 'Poppins, sans-serif',
     }),
-  },
-  recommendationsContainer: {
-    width: '100%',
-    maxWidth: 353,
-    position: 'relative',
-    marginVertical: 12,
-  },
-  recommendationsCard: {
-    backgroundColor: '#E8F8F0',
-    borderColor: '#6FCF97',
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-  },
-  recommendationsTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F6F5F',
-    marginBottom: 6,
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
-  },
-  recommendationsBody: {
-    fontSize: 12,
-    color: '#1F6F5F',
-    lineHeight: 18,
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      default: 'Poppins, sans-serif',
-    }),
-  },
-  starTopLeft: {
-    position: 'absolute',
-    top: -8,
-    left: -6,
-    zIndex: 10,
-  },
-  starBottomRight: {
-    position: 'absolute',
-    bottom: -8,
-    right: -6,
-    zIndex: 10,
   },
   resultsButtonContainer: {
     width: '100%',
