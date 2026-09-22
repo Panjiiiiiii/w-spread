@@ -14,11 +14,12 @@ Most finance apps fail for one simple reason: **users are too lazy to log transa
 
 W-Spread automates the entire process:
 
-1. **Upload** a photo or PDF of a bank statement / e-statement
-2. **OCR & Smart Parsing** automatically extracts transactions — near-zero manual entry
-3. **Days of Runway** is calculated in real time from balance and historical burn rate
-4. **Financial Health Score (0–100)** + gamification (streak, level, visual weather UI) keeps users engaged
+1. **Upload** a PDF bank e-statement (BCA, Mandiri, or BRI)
+2. **Automated parsing** extracts each transaction from the statement text — near-zero manual entry
+3. **Runway prediction** is calculated from the parsed transaction history (monthly average revenue vs. expense)
+4. **Financial Health Score** + gamification (streak, level, visual weather UI) keeps users engaged
 5. **What-If Simulator** (premium feature) — simulate the impact of a decision (e.g. hiring a new employee) on Runway *before* you make it
+6. **Statement upload history/log** — every upload attempt is recorded so you can review past statements and their parsed results
 
 ---
 
@@ -26,9 +27,10 @@ W-Spread automates the entire process:
 
 | Feature | Tier |
 |---|---|
-| Upload & OCR parsing of bank statements | Free |
-| Live Runway dashboard (single-number) | Free |
+| Upload & parsing of bank e-statements (PDF) | Free |
+| Live Runway dashboard | Free |
 | Financial Health Score + Streak + Visual Weather UI | Free |
+| Statement upload history/log | Free |
 | Leveling system (Survivor / Builder / Fortress) | Free |
 | What-If Decision Engine (simulate decision impact on Runway) | 🔒 Premium |
 
@@ -40,23 +42,34 @@ W-Spread automates the entire process:
 
 W-Spread uses **RevenueCat SDK** to manage subscriptions:
 
-| Plan | Price | Features |
-|---|---|---|
-| Free | $0 | Runway calculator, Health Score, Streak |
-| Premium Weekly | ~$1.90/week | + What-If Simulator |
-| Premium Yearly | ~$19/year | + What-If Simulator, all premium features |
-
-3-day free trial available on the yearly plan.
+| Plan | Monthly | Yearly | Features |
+|---|---|---|---|
+| Free | $0 | $0 | Runway calculator, Health Score, Streak, statement upload (20/month) |
+| Business | $10/mo | $96/yr (~$8/mo) | + Unlimited What-If Simulator, unlimited statement uploads, Personal vs. Business cash split |
+| Enterprise | $20/mo | $192/yr (~$16/mo) | + Predictive Cashflow Analytics & Valuation, multi-account/entity consolidation, API & audit log |
 
 ---
 
 ## 🛠️ Tech Stack
 
 - **Frontend:** React Native (Expo)
-- **Backend:** Firebase / Supabase
-- **OCR/Parsing:** [name of OCR API used]
+- **Backend:** Express.js + TypeScript + Prisma ORM + PostgreSQL (see the separate `w-spread-backend` repo — details below)
+- **File Storage:** Supabase Storage (used by the backend for avatar and e-statement file uploads)
+- **OCR/Parsing:** No third-party OCR service — statement PDFs are text-extracted with [`pdf-parse`](https://www.npmjs.com/package/pdf-parse) and parsed with a custom bank-statement transaction parser
 - **Monetization:** RevenueCat SDK + RevenueCat Paywalls
-- **Push Notifications:** [optional, if used]
+
+---
+
+## 🔌 Backend
+
+The backend for this app lives in its own repository and is **already deployed** — you don't need to run anything locally to try the app:
+
+- **Live API:** `https://w-spread-backend.vercel.app`
+- **Source code:** [Panjiiiiiii/w-spread-backend](https://github.com/Panjiiiiiii/w-spread-backend) — clone it if you want to self-host it or inspect/modify the API. That repo has its own README with full setup instructions (environment variables, Prisma migration steps, etc.); this README doesn't duplicate that here.
+
+```bash
+git clone https://github.com/Panjiiiiiii/w-spread-backend.git
+```
 
 ---
 
@@ -81,20 +94,26 @@ npx expo start
 ### Environment Variables
 
 ```
-EXPO_PUBLIC_API_URL=http://localhost:5000/api/v1
-REVENUECAT_API_KEY_IOS=
-REVENUECAT_API_KEY_ANDROID=
-FIREBASE_CONFIG=
-OCR_API_KEY=
+# Use the deployed backend (recommended, no local setup needed):
+EXPO_PUBLIC_API_URL=https://w-spread-backend.vercel.app/api/v1
+# Or, if running the backend locally instead:
+# EXPO_PUBLIC_API_URL=http://localhost:5000/api/v1
+
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=
+EXPO_PUBLIC_REVENUECAT_BUSINESS_ENTITLEMENT=business
+EXPO_PUBLIC_REVENUECAT_ENTERPRISE_ENTITLEMENT=enterprise
+EXPO_PUBLIC_REVENUECAT_BUSINESS_MONTHLY_PRODUCT_ID=
+EXPO_PUBLIC_REVENUECAT_BUSINESS_YEARLY_PRODUCT_ID=
+EXPO_PUBLIC_REVENUECAT_ENTERPRISE_MONTHLY_PRODUCT_ID=
+EXPO_PUBLIC_REVENUECAT_ENTERPRISE_YEARLY_PRODUCT_ID=
 ```
 
 ---
 
 ## 🎬 Demo
 
-📹 Demo video: [YouTube/Vimeo link]
-📱 Download: [App Store link] · [Play Store link]
-🔑 Promo code for judges: `SHIPATON2026`
+📹 Demo video: Not yet published
+📱 Download: Not yet published on the App Store or Play Store
 
 ---
 
@@ -105,11 +124,5 @@ OCR_API_KEY=
 - [ ] B2B acquisition loop (incubator/SME association partnerships)
 - [ ] Investor/Partner Read-Only Link for warm lead acquisition
 - [ ] Share-My-Runway card generator (Spotify Wrapped-style viral loop)
-
----
-
-## 🏆 Hackathon Submission
-
-Built for the **HAMM Award (Help Apps Make Money)** category — a laddered membership monetization strategy from free to enterprise, with a paywall integrated directly into the product's core value.
 
 ---
