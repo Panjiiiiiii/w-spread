@@ -258,9 +258,9 @@ export default function SimulateDecisionModal({
               />
             </View>
 
-            {/* 2. Input Number: Inject Capital ($) */}
+            {/* 2. Input Number: Inject Capital (Rp) */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Inject Capital ($)</Text>
+              <Text style={styles.inputLabel}>Inject Capital (Rp)</Text>
               <View style={styles.numberInputContainer}>
                 <TextInput
                   style={styles.numberInput}

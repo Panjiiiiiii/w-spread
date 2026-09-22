@@ -20,6 +20,7 @@ import {
   ArrowLeftIcon,
 } from '../components';
 import { createPrediction } from '../services/api';
+import { formatRupiah } from '../utils/formatCurrency';
 
 export default function PredictionScreen({
   activeTab = 'prediction',
@@ -192,13 +193,13 @@ export default function PredictionScreen({
                   <View style={styles.baselineRow}>
                     <Text style={styles.baselineLabel}>Avg Monthly Revenue</Text>
                     <Text style={styles.baselineValue}>
-                      $ {Number(averageMonthlyRevenue || 0).toLocaleString()}
+                      {formatRupiah(averageMonthlyRevenue)}
                     </Text>
                   </View>
                   <View style={styles.baselineRow}>
                     <Text style={styles.baselineLabel}>Avg Monthly Expenses</Text>
                     <Text style={styles.baselineValue}>
-                      $ {Number(averageMonthlyExpenses || 0).toLocaleString()}
+                      {formatRupiah(averageMonthlyExpenses)}
                     </Text>
                   </View>
                 </View>
@@ -218,9 +219,9 @@ export default function PredictionScreen({
                 />
               </View>
 
-              {/* 2. Input Number: Inject Capital ($) */}
+              {/* 2. Input Number: Inject Capital (Rp) */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Inject Capital ($)</Text>
+                <Text style={styles.inputLabel}>Inject Capital (Rp)</Text>
                 <View style={styles.numberInputContainer}>
                   <TextInput
                     style={styles.numberInput}
@@ -260,7 +261,7 @@ export default function PredictionScreen({
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Payroll / month ($)</Text>
+                <Text style={styles.inputLabel}>Payroll / month (Rp)</Text>
                 <View style={styles.numberInputContainer}>
                   <TextInput
                     style={styles.numberInput}
@@ -272,7 +273,7 @@ export default function PredictionScreen({
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Vendor / month ($)</Text>
+                <Text style={styles.inputLabel}>Vendor / month (Rp)</Text>
                 <View style={styles.numberInputContainer}>
                   <TextInput
                     style={styles.numberInput}
@@ -301,19 +302,19 @@ export default function PredictionScreen({
                 <View style={styles.predictionSummary}>
                   <Text style={styles.predictionSummaryTitle}>Server Forecast</Text>
                   <Text style={styles.predictionSummaryValue}>
-                    Projected balance: $ {Number(prediction.predictedBalance || 0).toLocaleString()}
+                    Projected balance: {formatRupiah(prediction.predictedBalance)}
                   </Text>
                   <Text style={styles.predictionSummaryText}>
-                    Conservative balance: $ {Number(prediction.conservativeBalance || 0).toLocaleString()}
+                    Conservative balance: {formatRupiah(prediction.conservativeBalance)}
                   </Text>
                   <Text style={styles.predictionSummaryText}>
                     Risk: {prediction.riskLevel} | {prediction.timeframeMonths} months
                   </Text>
                   <Text style={styles.predictionSummaryText}>
-                    Average revenue: $ {Number(prediction.averageMonthlyRevenue || 0).toLocaleString()} / month
+                    Average revenue: {formatRupiah(prediction.averageMonthlyRevenue)} / month
                   </Text>
                   <Text style={styles.predictionSummaryText}>
-                    Average expenses: $ {Number(prediction.averageMonthlyExpenses || 0).toLocaleString()} / month
+                    Average expenses: {formatRupiah(prediction.averageMonthlyExpenses)} / month
                   </Text>
                 </View>
               ) : null}
@@ -339,7 +340,7 @@ export default function PredictionScreen({
 
                 <View style={styles.adjustmentSmallCard}>
                   <Text style={styles.adjustmentLabel}>Injected Capital</Text>
-                  <Text style={styles.adjustmentValue}>$ {injectCapital}</Text>
+                  <Text style={styles.adjustmentValue}>Rp {injectCapital}</Text>
                 </View>
               </View>
 
@@ -365,7 +366,7 @@ export default function PredictionScreen({
                 <Text style={styles.comparisonLabel}>Daily Burn</Text>
                 <View style={styles.comparisonPill}>
                   <Text style={styles.comparisonPillText}>
-                    Before : $15.000 → After : $10.000 (-30%)
+                    Before : Rp15.000 → After : Rp10.000 (-30%)
                   </Text>
                 </View>
               </View>

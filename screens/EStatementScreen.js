@@ -21,6 +21,7 @@ import {
   CircularProgress,
 } from '../components';
 import { getStatementUploadUsage, uploadStatement } from '../services/api';
+import { formatRupiah } from '../utils/formatCurrency';
 
 const MAX_STATEMENT_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB, matches dropzone copy + backend limit
 
@@ -161,10 +162,7 @@ export default function EStatementScreen({
     return `${kb.toFixed(0)} KB`;
   };
 
-  const formatCurrency = (value) => {
-    const amount = Number(value || 0);
-    return `$${Math.round(amount).toLocaleString('en-US')}`;
-  };
+  const formatCurrency = (value) => formatRupiah(value);
 
   const formatDateShort = (isoDate) => {
     if (!isoDate) return '';
