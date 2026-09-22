@@ -342,7 +342,7 @@ export default function LogHistoryScreen({
                         <View style={styles.paramTag}>
                           <Text style={styles.paramTagLabel}>Capital:</Text>
                           <Text style={styles.paramTagValue}>
-                            +${log.params?.injectCapital ?? '10.000'}
+                            +Rp{log.params?.injectCapital ?? '10.000'}
                           </Text>
                         </View>
 
